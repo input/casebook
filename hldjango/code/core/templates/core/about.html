@@ -1,0 +1,12 @@
+{% extends "allauth/layouts/base.html" %}
+
+
+{% block content %}
+
+{{ pageHtml |safe }}
+
+<h2>Version History</h2>
+<div class="jrVersionHistoryPre">{{ versionHistory }}</div>
+
+
+{% endblock content %}

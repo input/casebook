@@ -1,0 +1,114 @@
+{% extends "allauth/layouts/base.html" %}
+
+{% load crispy_forms_tags %}
+{% load jrtemplatetags %}
+{% load gametemplatetags %}
+{% load static %}
+
+{% block title %}Game List{% endblock title %}
+
+
+{% block extra_head %}
+<script src="{% static "js/gameChangeReloader.js" %}" defer></script>
+{% endblock extra_head %}
+
+
+{% block content %}
+<script>
+    window.onload = async (event) => {await beginMonitoringForGameChanges("{% url 'gameApiModDateByPk' gamePkListStr='' %}");};
+</script>
+
+<!--
+<h1 class="jrshorth1">Game List</h1>
+-->
+
+
+<div class="jrpadafter border p-2">
+<form method="get" id="sortForm">
+    <label for="sort">Sort by:</label>
+    <select name="sort" id="sort" onchange="document.getElementById('sortForm').submit();">
+      <option value="default" {% if current_sort == 'default' %}selected{% endif %}>Default</option>
+      <option value="title" {% if current_sort == 'title' %}selected{% endif %}>Title</option>
+      <option value="created" {% if current_sort == 'created' %}selected{% endif %}>Creation Date</option>
+      <option value="modified" {% if current_sort == 'modified' %}selected{% endif %}>Modification Date</option>
+      <option value="owner" {% if current_sort == 'owner' %}selected{% endif %}>Owner</option>
+      <option value="campaign" {% if current_sort == 'campaign' %}selected{% endif %}>Campaign</option>
+    </select>
+
+    {% if user.is_authenticated %}
+        <label>
+            <input type="checkbox" name="onlyPublic" id="onlyPublic" value="1" {% if current_onlyPublic %}checked{% endif %} onchange="document.getElementById('sortForm').submit();"">
+            Only public
+        </label>
+    {% endif %}
+</form>
+</div>
+
+
+<ul class="gameList">
+{% for game in game_list %}
+    <li class="gameEntry">
+        <span class="monitor_game" id="monitor_game_{{ game.pk }}"  data-gameid="{{ game.pk }}" data-modified="{{ game.modified|date:'U' }}"></span>
+        <a href="{{ game.get_absolute_url }}">{{ game.title }} ({{ game.name }})</a>
+        <table class="gameListEntryTable">
+            <tr>
+                <td class="gameListEntryImage">
+                    {{ game|gameThumbnailForGameList }}
+                </td>
+                <td>
+                    <p>
+                        <b>Summary:</b> {{ game.summary }}<br/>
+                        <b>Owner:</b> <a href="{% url 'accountProfile' game.owner.pk %}">{{ game.owner }}</a><br/>
+                        <b>Game system:</b> {{ game.gameSystem }}<br/>
+
+                        {% if game.campaignName %}
+                            <b>Campaign:</b> {{ game.campaignName }}
+                            {% if game.campaignPosition %}
+                                (part {{ game.campaignPosition }})
+                            {% endif %}
+                            <br/>
+                        {% endif %}
+
+                        {% if game.gameDate != "" %}
+                            <b>Game date:</b> {{ game.gameDate }}<br/>
+                        {% endif %} 
+                        <b>Status:</b> 
+                        {% if game.isPublic %}
+                            Public
+                        {% else %}
+                            <span class="textWarn">Private</span>
+                        {% endif %}
+                        {% if game.status %}
+                            ({{ game.status }})
+                        {% endif %}
+                        <br/>
+                        {% if game.gameDate %}
+                            <b>Game date:</b> {{ game.gameDate }}<br/>
+                        {% endif %}
+                        {% if game.leadStats %}
+                            <b>Stats:</b> {{ game.leadStats }}<br/>
+                        {% endif %}
+
+
+
+                        <b>Created:</b> {{ game.created|niceGameDateFormat }}<br/>
+                        <b>Modified:</b> {{ game.modified|niceGameDateFormat }}<br/>
+                        <b>Published:</b> {% gamePublishInfoString game %}<br/>
+                    </p>
+                </td>
+            </tr>
+        </table>
+
+    </li>
+{% endfor %}
+</ul>
+
+
+{% if user.is_authenticated %}
+    <hr/>
+    <div>
+        <a href="{% url 'gameCreate' %}" class="btn btn-secondary" role="button">Create new game</a>
+    </div>
+{% endif %}
+
+{% endblock content %}

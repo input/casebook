@@ -1,0 +1,215 @@
+
+#navbarSupportedContent  > .navbar-nav .nav-link.active {
+    /* active navbar menu item; this selector overrides default django bootstrap selector so we can customize */
+}
+
+
+
+
+/* these two go together, the latter overriding the former when making a link visible only in certain cases */
+.jrnavhide {
+    display: none;
+}
+.jrnavshow {
+    display: block;
+}
+
+
+
+
+.buildLog {
+    font-family: monospace;
+    font-size: small;
+}
+
+textarea.buildLogError {
+    color: red;
+    margin-left: 15px;
+}
+
+textarea.buildLogErrorOld {
+    color: brown;
+    margin-left: 15px;
+}
+
+.textErrored {
+    color: red;
+}
+
+.textWarn {
+    color: maroon;
+    font-weight: bold;
+}
+
+
+
+/* sizing images on a page so they can be clicked for lightbox */
+img.imgReasonableSized {
+    max-width: 15%;
+    max-height: 15%;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+}
+
+
+img.imgThumbnailSized {
+    max-width: 5%;
+    max-height: 5%;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+}
+
+
+ul.gameFileList {
+    list-style: none;
+}
+
+li.gameFileEntry {
+    margin-bottom: 20px;
+}
+
+
+
+
+/* red error styling */
+.errorlist {
+    color: red;
+    font-weight: bold;
+}
+.error input, .error select {
+    border: 2px red solid;
+}
+
+
+.jrshorth1 {
+    margin: 0; padding: 0; line-height: 1; display: block;
+    transform: translateY(-0.2em);
+}
+
+.jrpadafter {
+    margin-bottom: 10px;
+}
+
+.gameList {
+    list-style-type: none;
+    padding-left: 1em; /* indentation */
+}
+
+table.gameListEntryTable {
+	border: 0px;
+}
+
+td.gameListEntryImage {
+    vertical-align: top;
+    padding-top: 5px;
+}
+
+td.gameListEntryImage img {
+	border: 1px;
+}
+
+img.gameThumbnail {
+	max-width: 100px !important;
+	max-height: 120px !important;
+	/*border: 1px;*/
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  margin-right:10px;
+}
+
+body > div.container-fluid > main {
+
+}
+
+body > div.container-fluid > main > div.gameIstructions > p {
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}
+
+
+
+
+
+
+/* for forms showing fields on same line when configured to use inline-field css class in meta in forms.py
+this is not currently used as it doesn't quite work; we will have to do more work to get the form to render in custom way */
+.jrinlineField {
+    display: inline-block; /* or 'flex' depending on your layout needs */
+    margin-right: 10px;   /* Add spacing between fields */
+    width: 30%;
+}
+
+
+
+
+
+
+.jrGenericDictTable {
+    border-collapse: separate; /* Ensures that the border-spacing applies */
+    border-spacing: 0px 0; /* 10px horizontal spacing, 0 vertical spacing */
+    width: 100%; /* Full-width table */
+    border: none; /* Removes the default border */
+}
+.jrGenericDictTable th, .jrGenericDictTable td {
+    padding: 8px; /* Padding within cells */
+    border: 1px solid #ddd; /* Light grey border around cells */
+}
+.jrGenericDictTable tr:nth-child(odd) {
+    background-color: #f9f9f9; /* Light grey for odd rows */
+}
+.jrGenericDictTable tr:nth-child(even) {
+    background-color: #ffffff; /* White for even rows */
+}
+.jrGenericDictTable th {
+    background-color: #4CAF50; /* Green background for headers */
+    color: white; /* White text for headers */
+}
+
+.jrGenericDictTable th {
+    background-color: #4CAF50; /* Green background for headers */
+    color: white; /* White text for headers */
+}
+
+
+
+
+.jrFileContentsBox {
+	width: 100%;  /* or any other width */
+	height: 400px; /* or any other height */
+	overflow: auto; /* Enables scrolling */
+	white-space: pre-wrap; /* Preserves whitespaces and wraps text */
+	border: 1px solid #ccc; /* Optional: adds a border around the scroll box */
+	display: none;
+	margin-bottom: 10px;
+	font-size: x-small;
+	font-family:monospace;
+}
+
+
+ul.jrButtonList li {
+    margin-bottom: 5px;  /* Adds space below each list item */
+}
+
+
+
+
+.jrVersionHistoryPre {
+    font-size: x-small;
+    font-family: monospace;    /* Sets the font to monospace, like <pre> */
+    white-space: pre;          /* Preserves whitespace */
+    display: block;            /* <pre> is a block-level element */
+    margin: 1em 0;             /* Default margin like <pre> */
+    padding: 0.5em;            /* Adds padding for better readability */
+    background-color: #f4f4f4; /* Optional: adds a background color */
+    border: 1px solid #ccc;    /* Optional: adds a border */
+    overflow: auto;            /* Adds horizontal scrolling if needed */
+    margin-left: 20px;
+}
+
+
+
+#mc_embed_signup {
+    margin: 0 0 2em 2em;             /* Default margin like <pre> */
+    padding: 0.5em;            /* Adds padding for better readability */
+    background-color: #f4f4f4; /* Optional: adds a background color */
+    background-color: #f4f4f4; /* Optional: adds a background color */
+    border: 1px solid #ccc;    /* Optional: adds a border */
+    float: right;
+}
