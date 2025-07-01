@@ -39,10 +39,16 @@ COPY install_scripts /install_scripts
 COPY code /code
 COPY deploy/jrlogs /jrlogs
 COPY deploy/db /db
-COPY deploy/media /media
 COPY deploy/static /static
 COPY deploy/botaccess /botaccess
 COPY deploy/etc /etc
+
+# ATTN: NEW - first we copy over media folder tree inside deploy, but this is minimal other than possibly a game games/; then we copy the real media directory other than games/
+COPY deploy/media /media
+# ATTN: the exclude arg is not supported well in docker YET, so instead we added a .dockerignore file to root to skip media/games and then use a copy for the whole thing
+#COPY --exclude=games media /media
+COPY media /media
+
 
 # copy requirements into install_scripts
 COPY requirements.txt /install_scripts

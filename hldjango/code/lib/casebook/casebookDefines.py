@@ -8,14 +8,17 @@
 
 
 # defines
-DefCbVersion = "4.67"
-DefCbVersionDate = "6/15/25"
+DefCbVersion = "4.68"
+DefCbVersionDate = "6/30/25"
 DefCbVersionString = "v" + DefCbVersion + " (" + DefCbVersionDate + ")"
 DefCbBuildString = "Casebook " + DefCbVersionString
 DefCbAuthorString = "Jesse Reichler <jessereichler@gmail.com>"
 
 # version changes
 DefCbVersionHistory = """
+# v4.68 (6/30/25)
+Improved sorting for criminal history directory
+Streamlining docker build to avoid duplicate media directory
 # v4.67 (6/16/25)
 Added new functions so that auto lead generation will be stable and consistent between runs even after changes are made.
 The website now automatically saves not only source text versions every time a case source is changed, but versioned copies of all published pdfs; this will make it easier to diagnose issues.
