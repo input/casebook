@@ -77,6 +77,8 @@ def fileUrlList(requestingUser, gamePk, gameFileTypeName, optionStr):
     options["showDate"] = True
   if ("noInfo" in optionStrList):
     options["noInfo"] = True
+  if ("dontShare" in optionStrList):
+    options["dontShare"] = True
 
   # get game
   game = Game.objects.get(pk=gamePk)
@@ -102,6 +104,9 @@ def fileUrlList(requestingUser, gamePk, gameFileTypeName, optionStr):
 
   if ("noCover" in optionStrList):
       fileList = list(filter(lambda x: ("_cover." not in x["name"]), fileList))
+
+  if ("noPlayManifest" in optionStrList):
+      fileList = list(filter(lambda x: ("_playManifest.json" not in x["name"]), fileList))
 
   # build results
   buildResults = game.getBuildResultsAnnotated(gameFileTypeName)

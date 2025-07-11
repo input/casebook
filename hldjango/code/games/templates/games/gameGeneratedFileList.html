@@ -31,7 +31,7 @@
 
     <h3>Preferred Files</h3>
     <div><input class="btn btn-success" type="submit" name="buildPreferred" value="Quick build single storybook PDF in preferred format" {% jrconfirmRebuildIfNotNeeded game "buildPreferred" %}> - {{game.get_preferredFormatPaperSize_display}} / {{game.get_preferredFormatLayout_display}}</div>
-    {% fileUrlList user game.pk "buildPreferred" "showDate" %}
+    {% fileUrlList user game.pk "buildPreferred" "showDate,dontShare" %}
 
     <h3>Debug Files</h3>
     <div><input class="btn btn-success" type="submit" name="buildDebug" value="Build debug files to check for problems" {% jrconfirmRebuildIfNotNeeded game "buildDebug" %}></div>
@@ -39,7 +39,7 @@
 
     <h3>Draft Publication Files</h3>
     <div><input class="btn btn-success" type="submit" name="buildDraft" value="Build complete set of *draft* Storybook PDFs in all formats (slow)" {% jrconfirmRebuildIfNotNeeded game "buildDraft" %}></div>
-    {% fileUrlList user game.pk "buildDraft" "showDate" %}
+    {% fileUrlList user game.pk "buildDraft" "showDate,dontShare" %}
 
 </form>
 

@@ -8,6 +8,7 @@ __pycache__/
 .env
 
 olderHlData
+oldJunk
 
 logs
 *_secret.py

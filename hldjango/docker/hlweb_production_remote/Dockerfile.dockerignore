@@ -14,4 +14,10 @@
 **/log*.txt
 **/UNUSED
 **/OLDJUNK
+**/OldJunk
 **/*.bak
+
+**/__pycache__
+*.pyc
+
+media/games/*

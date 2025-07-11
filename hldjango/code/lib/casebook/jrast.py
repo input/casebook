@@ -244,14 +244,24 @@ class JrAstRoot (JrAst):
         dataVersion = jrfuncs.getDictValueOrDefault(leadDbData, "version", None)
         dataVersionPrevious = jrfuncs.getDictValueOrDefault(leadDbData, "versionPrevious", None)
         seed = jrfuncs.getDictValueOrDefault(leadDbData, "seed", None)
+        pluginId = jrfuncs.getDictValueOrDefault(leadDbData, "leadPlugin", None)
+        if (pluginId is None):
+            # try to get it from the main lead section config
+            leadPluginP = None
+            mainLeadsSectionEntryp = env.findEntryByIdPath(JrCbMainSectionName_Leads, None)
+            if (mainLeadsSectionEntryp is not None):
+                leadPluginP = mainLeadsSectionEntryp.getPrimaryChildPluginFromSection(interp)
+        else:
+            pluginManager = env.getPluginManager()
+            leadPluginP = pluginManager.findPluginById(DefPluginDomainEntryLeadProcessor, pluginId)
         #
         if (dataVersion is not None):
             hlApiOptions = {"dataVersion": dataVersion, "seed": seed}
-            interp.getHlApi().configure(hlApiOptions)
+            interp.getHlApi().configureHlApi(hlApiOptions, leadPluginP)
         #
         if (dataVersionPrevious is not None) and (dataVersionPrevious!=""):
             hlApiOptions = {"dataVersion": dataVersionPrevious, "seed": seed}
-            interp.getHlApiPrev().configure(hlApiOptions)
+            interp.getHlApiPrev().configureHlApi(hlApiOptions, leadPluginP)
         else:
             interp.getHlApiPrev().setDisabled(True)
 
@@ -569,6 +579,18 @@ class JrAstEntry(JrAst):
         return self.childPlugins
     def setChildPlugins(self, val):
         self.childPlugins = val
+
+    def getPrimaryChildPluginFromSection(self, jrinterp):
+        childPlugins = self.getChildPlugins()
+        pluginIds = childPlugins.split(",")
+        if (len(pluginIds)==0):
+            return None
+        pluginId = pluginIds[0]
+        pluginManager = jrinterp.getPluginManager()
+        plugin = pluginManager.findPluginById(DefPluginDomainEntryLeadProcessor, pluginId)
+        return plugin
+
+
 
     def shouldEntryIdBeUnique(self):
         # ATTN: note that options have not been processed yet, so getBlankHead() is not a reliable check

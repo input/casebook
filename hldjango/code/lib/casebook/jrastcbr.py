@@ -45,6 +45,7 @@ class JrAstRootCbr(jrast.JrAstRoot):
             "version": None,
             "versionPrevious": None,
             "seed": 0,
+            "leadPlugin": None,
         }
 
         parserData = {
@@ -81,6 +82,19 @@ class JrAstRootCbr(jrast.JrAstRoot):
             "language": DefCbLocaleDefault_language
         }
 
+        # for configuring target builds
+        targetBuildPreferred = {
+            "targets": DefCbTargetBuildDefault_Targets_Preferred,
+            "zip": False,
+        }
+        targetBuildDebug = {
+            "targets": DefCbTargetBuildDefault_Targets_Debug,
+            "zip": False,
+        }
+        targetBuildDraft = {
+            "targets": DefCbTargetBuildDefault_Targets_Draft,
+            "zip": False,
+        }
 
 
         # register these python objects with runtime environment
@@ -91,3 +105,7 @@ class JrAstRootCbr(jrast.JrAstRoot):
         env.declareEnvVar(None, "documentData", "document settings", wrapDictForAstVal(None, documentData), False)
         env.declareEnvVar(None, "tagData", "tag settings", wrapDictForAstVal(None, tagData), False)
         env.declareEnvVar(None, "localeData", "locale (translation) settings", wrapDictForAstVal(None, localeData), False)
+
+        env.declareEnvVar(None, "targetBuildPreferred", "settings for doing a preferred build", wrapDictForAstVal(None, targetBuildPreferred), False)
+        env.declareEnvVar(None, "targetBuildDebug", "settings for doing a debug build", wrapDictForAstVal(None, targetBuildDebug), False)
+        env.declareEnvVar(None, "targetBuildDraft", "settings for doing a draft build", wrapDictForAstVal(None, targetBuildDraft), False)

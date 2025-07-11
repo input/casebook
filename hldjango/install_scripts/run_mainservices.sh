@@ -57,13 +57,10 @@ fi
 if [ "$JR_DJANGO_WEBSERVER" == "devbuiltin" ]
 then
     # start django web server (process 1)
-    # ATTN: TODO: change this to production web server
-    #python ./manage.py runserver 0.0.0.0:8000 &
     python ./manage.py runserver_local 0.0.0.0:$WEBSERVER_PORT_STANDALONE &
 
 elif [ "$JR_DJANGO_WEBSERVER" == "waitress" ]
 then
-    #python ./manage.py runserver_waitress 0.0.0.0 8000 &
     python ./manage.py runserver_waitress 0.0.0.0 $WEBSERVER_PORT_STANDALONE &
 
 elif [ "$JR_DJANGO_WEBSERVER" == "gunicorn" ]

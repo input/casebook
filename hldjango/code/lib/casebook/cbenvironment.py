@@ -1,5 +1,5 @@
 # jrast
-from .jrastfuncs import wrapValIfNotAlreadyWrapped, unwrapIfWrappedVal
+from .jrastfuncs import wrapValIfNotAlreadyWrapped, unwrapIfWrappedVal, getUnsafeDictValueAsString, getUnsafeDictValueAsNumber
 from .jrastvals import AstValObject
 from .jriexception import *
 from .jrastutilclasses import JrINote
@@ -21,6 +21,7 @@ from .casebookDefines import *
 
 # python modules
 import difflib
+import re
 
 
 
@@ -432,7 +433,7 @@ class JrCbEnvironment:
             msg = noteMessage + ': "{}"'.format(notePath)
             msgLatex = noteMessage + ': "\\path{' + notePath + '}"'
             extras = {"filePath": fileFullPath}
-            note = JrINote(noteTypeStr, leadp, msg, msgLatex, extras)
+            note = JrINote(noteTypeStr, None, leadp, msg, msgLatex, extras)
             env.addNote(note)
 
         return [fileFullPath, warningText]
@@ -474,7 +475,6 @@ class JrCbEnvironment:
         
         return varList
 #---------------------------------------------------------------------------
-
 
 
 

@@ -318,7 +318,7 @@ class CbPlugin:
         if (leadRow is None):
             # generate warning that we have a lead id# specified but it doesn't exist in db
             msg = 'Lead was not found in leadDb ({})'.format(hlApi.getVersion())
-            note = JrINote("leadDbWarning", lead, msg, None, None)
+            note = JrINote("leadDbWarning", 1, lead, msg, None, None)
             env.addNote(note)
 
             # provide info about PREV LEAD
@@ -326,7 +326,7 @@ class CbPlugin:
                 # generate warning that we have a previous lead id# specified but it doesn't exist in db
                 if (hlApiPrev.isEnabled()):
                     msg = 'Lead was ALSO NOT found in PREVIOUS leadDb ({})'.format(hlApiPrev.getVersion())
-                    note = JrINote("leadDbWarning", lead, msg, None, None)
+                    note = JrINote("leadDbWarning", 1, lead, msg, None, None)
                     env.addNote(note)
                 else:
                     # nothing to complain about
@@ -335,7 +335,7 @@ class CbPlugin:
                 # generate warning that about what it was in PREVIOUS db
                 prevDbLabel = hlApiPrev.getNiceFullLabelWithAddress(leadRowPrev)
                 msg = 'CAUTION! Lead WAS found in PREVIOUS leadDb () - {}: {}'.format(hlApiPrev.getVersion(), prevDbLabel)
-                note = JrINote("leadDbWarning", lead, msg, None, None)
+                note = JrINote("leadDbWarning", 1, lead, msg, None, None)
                 env.addNote(note)
 
             # record that we used it
@@ -355,7 +355,7 @@ class CbPlugin:
         if (isLeadRowFromVolatileDb):
             # generate warning that lead row is from volatile db that could change on new version
             msg = 'Lead is from a leadDb [{}:{}] that is volatile (could change on major directory update); consider submitting userdblead json to maintainers for locking.'.format(hlApi.getVersion(), sourceKey)
-            note = JrINote("leadDbWarning", lead, msg, None, None)
+            note = JrINote("leadDbWarning", 5, lead, msg, None, None)
             env.addNote(note)
 
 
@@ -374,13 +374,13 @@ class CbPlugin:
         if (subheading is None):
             [address, addressWithApt] = hlApi.getNiceAddress(leadRow, neighborhoodOptions, True)
             msg = 'Lead {} has no descriptive label; in database as:  \"{}\" @ \"{}\"'.format(leadIdNumberText, dName, addressWithApt)
-            note = JrINote("leadDbWarning", lead, msg, None, None)
+            note = JrINote("leadDbWarning", 3, lead, msg, None, None)
             env.addNote(note)
         elif (not hlApi.leadRowHasSimilarLabel(leadRow, subheading)):
             # dissimilar warning
             [address, addressWithApt] = hlApi.getNiceAddress(leadRow, neighborhoodOptions, True)
             msg = 'Lead label \"{}\" differs from database label \"{}\" @ \"{}\"'.format(subheading, dName, addressWithApt)
-            note = JrINote("leadDbWarning", lead, msg, None, None)
+            note = JrINote("leadDbWarning", 2, lead, msg, None, None)
             env.addNote(note)
 
         # warn about previous lead differences
@@ -394,7 +394,7 @@ class CbPlugin:
             labelNew = "{} @ {}".format(dName, address)
             if (labelNew != labelPrev):
                 msg = "CAUTION! The old leaddb data ({} \"{}\") differs from new ({} \"{}\")".format(hlApiPrev.getVersion(), labelPrev,  hlApi.getVersion(), labelNew)
-                note = JrINote("leadDbWarning", lead, msg, None, None)
+                note = JrINote("leadDbWarning", 1, lead, msg, None, None)
                 env.addNote(note)
 
         # save dName with lead

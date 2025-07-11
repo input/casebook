@@ -8,14 +8,29 @@
 
 
 # defines
-DefCbVersion = "4.68"
-DefCbVersionDate = "6/30/25"
+DefCbVersion = "4.77"
+DefCbVersionDate = "7/9/25"
 DefCbVersionString = "v" + DefCbVersion + " (" + DefCbVersionDate + ")"
 DefCbBuildString = "Casebook " + DefCbVersionString
 DefCbAuthorString = "Jesse Reichler <jessereichler@gmail.com>"
 
 # version changes
 DefCbVersionHistory = """
+# v4.77 (7/9/25)
+Tweaked the consistent autolead id generation; unfortunately new builds will have different inline lead ids than previous but this should be consistent going forward
+# v4.76 (7/6/25)
+Added debug export of a manual json leads used file, to help track any leads that should not be removed from manual dbs
+Improved hash-based consistent auto lead number generation to properly work with all output formats including simple alphanumeric choose-your-own adventure paragraph numbering and made it auto avoid manually used leads
+# v4.75 (7/5/25)
+Added v3latest download links, etc.
+Lead stats now only reports lead count under main section
+Database Lead warning report now sorted and organized by prioriry
+Added warning against sharing non-published files
+Added $reportCoverage*() functions to list leads of interest that dont have entries in case
+# v4.69 (7/1/24)
+For overlaying text on full page image i changed the blend mode from multiply to overlay, which gives better contrast and supports white text over dark background
+Added support in $defineFont to just pass a font path of "default" if you want to modify the default font to change its color or scale
+Fixed bug when referring to unlisted addresses.
 # v4.68 (6/30/25)
 Improved sorting for criminal history directory
 Streamlining docker build to avoid duplicate media directory
@@ -275,6 +290,11 @@ DefCbRenderSettingDefault_Tag_consistentNumber = True
 DefCbRenderSettingDefault_Tag_mode = "sequential" # ["sequential", "random", "firstLetter"]
 DefCbRenderSettingDefault_Tag_sortRequire = True
 
+DefCbTargetBuildDefault_Targets_Preferred = ""
+DefCbTargetBuildDefault_Targets_Debug = ""
+DefCbTargetBuildDefault_Targets_Draft = ""
+
+
 # locale
 DefCbLocaleDefault_language = "en"
 
@@ -302,3 +322,11 @@ DefInlineLeadLabelStart = "inline - "
 
 # result notes
 DefCbResultNoteTypePreArticleBodyEnd = "newspaperPreArticleBodyEnd"
+
+
+# predefined section names
+JrCbMainSectionName_Leads = "LEADS"
+JrCbMainSectionName_Hints = "HINTS"
+JrCbMainSectionName_Report = "REPORT"
+JrCbMainSectionName_Front = "FRONT"
+JrCbMainSectionName_End = "END"

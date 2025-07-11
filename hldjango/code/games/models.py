@@ -77,6 +77,7 @@ class Game(models.Model):
 
     #GameFormatPaperSizeCompleteList = [GamePreferredFormatPaperSize_Letter, GamePreferredFormatPaperSize_A4, GamePreferredFormatPaperSize_B5, GamePreferredFormatPaperSize_A5]
     GameFormatPaperSizeCompleteList = [GamePreferredFormatPaperSize_Letter, GamePreferredFormatPaperSize_A4, ]
+    GameFormatPaperSizeCanonicalScreenPlay = GamePreferredFormatPaperSize_Letter
 
     #
     GamePreferredFormatLayout_Solo = "SOLOSCR"
@@ -91,6 +92,7 @@ class Game(models.Model):
     ]
     #GameFormatLayoutCompleteList = [GamePreferredFormatLayout_Solo, GamePreferredFormatLayout_SoloPrint, GamePreferredFormatLayout_OneCol, GamePreferredFormatLayout_TwoCol]
     GameFormatLayoutCompleteList = [GamePreferredFormatLayout_Solo, GamePreferredFormatLayout_TwoCol]
+    GameFormatLayoutCanonicalForScreenPlay = GamePreferredFormatLayout_Solo
 
 
     # tracking creation and modification dates

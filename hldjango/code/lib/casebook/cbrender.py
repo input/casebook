@@ -97,9 +97,14 @@ class CbRenderBase():
         #
         # this has to be done AFTER the initializations above
         self.setOptionsFromEntry(renderdoc, entry, flagCopyEntryRid)
+        #
+        # details computed on render which can be useful for manifest output
+        self.renderedInfo = {}
 
 
 
+    def getRenderedInfo(self):
+        return self.renderedInfo
 
 
     def getMindMapNodeInfo(self):
@@ -697,7 +702,6 @@ class CbRenderBase():
 
 
 
-
 # a document is made up of sections
 class CbRenderDoc(CbRenderBase):
     def __init__(self, interp):
@@ -913,7 +917,11 @@ class CbRenderDoc(CbRenderBase):
 
 
     def calcLeadCount(self):
-        return self.children.calcLeadCountRecursive()
+        leadSectionChild = self.getMainLeadsSection()
+        if (leadSectionChild is not None):
+            return leadSectionChild.children.calcLeadCountRecursive()
+        else:
+            return self.children.calcLeadCountRecursive()
 
 
     def calcFlatLeadList(self, flagIncludeSections):
@@ -929,29 +937,41 @@ class CbRenderDoc(CbRenderBase):
         return retList
 
     def calcLeadStatsString(self, env):
+        stats = self.calcStatsAsDict(env)
+        text = ""
+        text += "{} Leads".format(stats["leadCount"])
+        text += " / {} Docs".format(stats["docCount"])
+        text += " / {} Markers".format(stats["markerCount"])
+
+        text += " / {} Images".format(stats["imageFiles"]-stats["imageFilesUnused"])
+        text += " / {} Days".format(stats["dayCount"])     
+        #
+        wordsPerLead = (int(stats["plainTextWordCount"] / stats["leadCount"])) if (stats["leadCount"]>0) else 0
+        text += " / {} Words ({:.2f} avg.)".format(jrfuncs.niceLargeNumberStr(stats["plainTextWordCount"]), stats["wordsPerLead"])
+        text += " / {}".format(jrfuncs.niceFileSizeStr(stats["plainTextByteCount"]))
+          #
+        return text
+
+
+    def calcStatsAsDict(self, env):
+        tagManager = env.getTagManager()
+        imageHelper = env.getFileManagerImagesCase()
+        dayManager = env.getDayManager()
+        #
         leadCount = self.calcLeadCount()
         plainTextWordCount = self.calcStatPlainTextWordCount()
-        text = ""
-        text += "{} Leads".format(leadCount)
-        # new stuff
-        tagManager = env.getTagManager()
-        text += " / {} Docs".format(tagManager.getDocCount())
-        text += " / {} Markers".format(tagManager.getMarkerCount())
-
-        imageHelper = env.getFileManagerImagesCase()
-        numFiles = imageHelper.getCount()
-        unusedFileCount = imageHelper.getUnusedFileCount()
-        text += " / {} Images".format(numFiles-unusedFileCount)
-
-        dayManager = env.getDayManager()
-        text += " / {} Days".format(dayManager.getDayCount())     
-        #
-        wordsPerLead = (int(plainTextWordCount["words"] / leadCount)) if (leadCount>0) else 0
-        text += " / {} Words ({} avg.)".format(jrfuncs.niceLargeNumberStr(plainTextWordCount["words"]), wordsPerLead)
-        text += " / {}".format(jrfuncs.niceFileSizeStr(plainTextWordCount["bytes"]))
-  
-        #
-        return text
+        stats = {
+            "leadCount": leadCount,
+            "plainTextWordCount": plainTextWordCount["words"],
+            "plainTextByteCount": plainTextWordCount["bytes"],
+            "wordsPerLead": (int(plainTextWordCount["words"] / leadCount)) if (leadCount>0) else 0,
+            "docCount": tagManager.getDocCount(),
+            "markerCount": tagManager.getMarkerCount(),
+            "imageFiles": imageHelper.getCount(),
+            "imageFilesUnused": imageHelper.getUnusedFileCount(),
+            "dayCount": dayManager.getDayCount(),
+        }
+        return stats
 
 
 
@@ -1119,8 +1139,6 @@ class CbRenderSection(CbRenderBase):
                             didFile = plugin.fileLead(env, lead, parentSection, renderDoc)
         #
         return didFile
-
-
 
 
 

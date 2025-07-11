@@ -25,7 +25,7 @@ xcopy "%sourceDir%\locs\" ".\other" %options%
 xcopy "%sourceDir%\blocks\" ".\other" %options%
 xcopy "%sourceDir%\regions\" ".\other" %options%
 
-mkdir leadsCombined
+REM mkdir leadsCombined
 REM xcopy "%sourceDir%\people_formap\" ".\leadsCombined" %options%
 REM xcopy "%sourceDir%\places_formap\" ".\leadsCombined" %options%
 REM xcopy "%sourceDir%\places_formap_allinone\" ".\leadsCombined" %options%

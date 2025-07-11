@@ -10,7 +10,7 @@ from .cbtask import DefRmodeRun, DefRmodeRender
 from .jriexception import *
 from .jrastfuncs import getUnsafeDictValueAsString, makeLatexLinkToRid, vouchForLatexString, convertEscapeUnsafePlainTextToLatex, convertEscapePlainTextFilePathToLatex, convertEscapeUnsafePlainTextToLatexMorePermissive, convertIdToSafeLatexId
 from .jrastfuncs import isTextLatexVouched, unwrapIfWrappedVal
-from .jrastutilclasses import JrINote
+from .jrastutilclasses import JrINote, JrIRequest
 
 #
 from .cbdeferblock import CbDeferredBlockRefLead, CbDeferredBlockCaseStats, CbDeferredBlockFollowCase, CbDeferredBlockAbsorbFollowingNewline, CbDeferredBlockAbsorbPreviousNewline
@@ -230,6 +230,75 @@ def buildFunctionList():
     #---------------------------------------------------------------------------
 
 
+
+
+
+    #---------------------------------------------------------------------------
+    functionList.append(CbFunc("configureBuildDraft", "Configure the draft build", [
+            CbParam("targets", "Comma separated target list", None, True, AstValString, False),
+            CbParam("zip", "zip files?", None, True, AstValBool, False),
+        ],
+        "text", None, {"mode":"draft"},
+        funcConfigureBuild
+        ))
+
+    functionList.append(CbFunc("configureBuildPreferred", "Configure the draft build", [
+            CbParam("targets", "Comma separated target list", None, True, AstValString, False),
+            CbParam("zip", "zip files?", None, True, AstValBool, False),
+        ],
+        "text", None, {"mode":"preferred"},
+        funcConfigureBuild
+        ))
+
+    functionList.append(CbFunc("configureBuildDebug", "Configure the draft build", [
+            CbParam("targets", "Comma separated target list", None, True, AstValString, False),
+            CbParam("zip", "zip files?", None, True, AstValBool, False),
+        ],
+        "text", None, {"mode":"debug"},
+        funcConfigureBuild
+        ))
+    #---------------------------------------------------------------------------
+
+
+    #---------------------------------------------------------------------------
+    functionList.append(CbFunc("reportCoverageYellowCategory", "In debug build, request a report on coverage of leads referring to certain yellow categories", [
+            CbParam("range", "How far to look", None, True, ["in","near","global"], False),
+            CbParam("neighborhood", "Neighborhood code (2-letters) to check in", None, True, AstValString, False),
+            CbParam("nearLead", "use neighborhood of this lead", None, True, AstValString, False),
+            CbParam("pcat", "yellow pages pcat code(s) separate with |", None, True, AstValString, False),
+            CbParam("pcatg", "yellow pages pcatg code(s) separate with |", None, True, AstValString, False),
+            CbParam("likeLead", "use pcat and pcatg from this lead", None, True, AstValString, False),
+            CbParam("label", "optional label for report", None, True, AstValString, False),
+        ],
+        "text", None, None,
+        funcReportCoverageYellowCategory
+        ))
+
+
+    functionList.append(CbFunc("reportCoverageName", "In debug build, request a report on coverage of people leads referring to a certain name", [
+            CbParam("range", "How far to look", None, True, ["in","near","global"], False),
+            CbParam("neighborhood", "Neighborhood code (2-letters) to check in", None, True, AstValString, False),
+            CbParam("nearLead", "use neighborhood of this lead", None, True, AstValString, False),
+            CbParam("last", "last Name to search for", None, True, AstValString, False),
+            CbParam("first", "last Name to search for", None, True, AstValString, False),
+            CbParam("label", "optional label for report", None, True, AstValString, False),
+        ],
+        "text", None, None,
+        funcReportCoverageName
+        ))
+    
+    
+    functionList.append(CbFunc("reportCoverageLeads", "In debug build, request a report on coverage of specific leads that have no entries", [
+            CbParam("leads", "comma separated list of leads", None, False, AstValString, False),
+            CbParam("label", "optional label for report", None, True, AstValString, False),
+        ],
+        "text", None, None,
+        funcReportCoverageLeads
+        ))
+    #---------------------------------------------------------------------------
+
+
+
     return functionList
 
 
@@ -306,7 +375,6 @@ def funcUnimplementedUnified(rmode, env, entryp, leadp, astloc, args, customData
 
 #---------------------------------------------------------------------------
 def funcInstructionsStartDay(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     dayNumber = args["day"].getWrapped()
     bonusReputation = args["bonusReputation"].getWrapped()
@@ -433,7 +501,6 @@ def funcInstructionsStartDay(rmode, env, entryp, leadp, astloc, args, customData
 
 #---------------------------------------------------------------------------
 def funcInstructionsEvening(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     dayNumber = args["day"].getWrapped()
     nextLeadId = args["next"].getWrapped()
@@ -548,7 +615,6 @@ def funcInstructionsEvening(rmode, env, entryp, leadp, astloc, args, customData,
 
 #---------------------------------------------------------------------------
 def funcInstructionsEndLastDay(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     dayNumber = args["day"].getWrapped()
     overtime = args["overtime"].getWrapped()
@@ -629,7 +695,6 @@ def funcInstructionsEndLastDay(rmode, env, entryp, leadp, astloc, args, customDa
 
 #---------------------------------------------------------------------------
 def funcInstructionsPostQuestionsResume(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     dayNumber = args["day"].getWrapped()
     demerits = args["demerits"].getWrapped()
@@ -737,7 +802,6 @@ def funcInstructionsPostQuestionsResume(rmode, env, entryp, leadp, astloc, args,
 
 #---------------------------------------------------------------------------
 def funcInstructionsIrps(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     start = args["start"].getWrapped()
     gain = args["gain"].getWrapped()
@@ -815,8 +879,6 @@ def funcInstructionsIrps(rmode, env, entryp, leadp, astloc, args, customData, fu
 
 #---------------------------------------------------------------------------
 def funcInstructionsScheduledEvent(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
-
     # for markdown conversion
     renderer = env.getRenderer()
 
@@ -844,7 +906,6 @@ def funcInstructionsScheduledEvent(rmode, env, entryp, leadp, astloc, args, cust
 
 #---------------------------------------------------------------------------
 def funcScheduleIrp(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     leadid = args["lead"].getWrapped()
     cost = args["cost"].getWrapped()
@@ -895,7 +956,6 @@ def funcScheduleIrp(rmode, env, entryp, leadp, astloc, args, customData, funcNam
 
 #---------------------------------------------------------------------------
 def funcEvent(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     leadid = args["lead"].getWrapped()
     dayNumber = args["day"].getWrapped()
@@ -1070,7 +1130,6 @@ def funcEvent(rmode, env, entryp, leadp, astloc, args, customData, funcName, tar
 # ---------------------------------------------------------------------------
 def funcReferDb(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Refer to another lead
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     # args
     id = args["id"].getWrapped()
@@ -1103,8 +1162,6 @@ def funcReferDb(rmode, env, entryp, leadp, astloc, args, customData, funcName, t
 # ---------------------------------------------------------------------------
 # ATTN: THIS CURRENTLY HAS NO USE CASE
 def funcFormatAfterImage(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    # Refer to another lead
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     # assemble result
     results = JrAstResultList()
@@ -1130,7 +1187,6 @@ def funcFormatAfterImage(rmode, env, entryp, leadp, astloc, args, customData, fu
 
 # ---------------------------------------------------------------------------
 def funcDefineQuestion(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     # args
     id = args["id"].getWrapped()
@@ -1161,7 +1217,6 @@ def funcDefineQuestion(rmode, env, entryp, leadp, astloc, args, customData, func
 
 
 def funcQuestionAnswer(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     # args
     id = args["id"].getWrapped()
@@ -1187,7 +1242,6 @@ def funcQuestionAnswer(rmode, env, entryp, leadp, astloc, args, customData, func
 
 # ---------------------------------------------------------------------------
 def funcQuestionTotal(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     renderer = env.getRenderer()
 
@@ -1218,7 +1272,6 @@ def funcQuestionTotal(rmode, env, entryp, leadp, astloc, args, customData, funcN
 
 # ---------------------------------------------------------------------------
 def funcPointsLine(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     renderer = env.getRenderer()
 
@@ -1244,7 +1297,6 @@ def funcPointsLine(rmode, env, entryp, leadp, astloc, args, customData, funcName
 
 
 def funcLederLine(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     renderer = env.getRenderer()
     
@@ -1264,4 +1316,117 @@ def funcLederLine(rmode, env, entryp, leadp, astloc, args, customData, funcName,
     results.flatAdd(vouchForLatexString(latex, True))
 
     return results
+# ---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------------------------------------------------------------------
+def funcConfigureBuild(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
+    mode = customData["mode"]
+    targets = args["targets"].getWrapped()
+    zip = args["zip"].getWrapped()
+
+    dataStructNames = {
+        "buildPreferred": "targetBuildPreferred",
+        "buildDebug": "targetBuildDebug",
+        "buildDraft": "targetBuildDraft",
+    }
+    if (not mode in dataStructNames):
+        raise makeJriException("Unknown build target for configureBuild ({}).".format(mode), astloc)
+    dataStructName = dataStructNames[mode]
+    dataStruct = env.getEnvValueUnwrapped(None, dataStructName, None)
+    # set values
+    if (targets is not None):
+        dataStruct["targets"] = targets
+    if (zip is not None):
+        dataStruct["zip"] = zip
+# ---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------------------------------------------------------------------
+def funcReportCoverageYellowCategory(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
+    theDict = {
+        "type": "coverageYellowCategory",
+        "range": args["range"].getWrapped(),
+        "neighborhood": args["neighborhood"].getWrapped(),
+        "nearLead": args["nearLead"].getWrapped(),
+        "pcat": args["pcat"].getWrapped(),
+        "pcatg": args["pcatg"].getWrapped(),
+        "likeLead": args["likeLead"].getWrapped(),
+        "label": args["label"].getWrapped(),
+    }
+
+    if (theDict["neighborhood"] is not None) and (theDict["nearLead"] is not None):
+        raise makeJriException("You should not specify both a neighborhood and a nearLead when doing a coverage report.", astloc)
+    if (theDict["neighborhood"] is None) and (theDict["range"]!="global") and (theDict["nearLead"] is None):
+        raise makeJriException("You need to specify EITHER a neighborhood, a nearLead, or range=global.", astloc)
+    
+    req = JrIRequest(theDict)
+    env.getInterp().addReportRequest(req)
+    return AstValNull(astloc, entryp)
+
+
+def funcReportCoverageName(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
+    theDict = {
+        "type": "coverageName",
+        "range": args["range"].getWrapped(),
+        "neighborhood": args["neighborhood"].getWrapped(),
+        "nearLead": args["nearLead"].getWrapped(),
+        "first": args["first"].getWrapped(),
+        "last": args["last"].getWrapped(),
+        "label": args["label"].getWrapped(),
+    }
+
+    if (theDict["neighborhood"] is not None) and (theDict["nearLead"] is not None):
+        raise makeJriException("You should not specify both a neighborhood and a nearLead when doing a coverage report.", astloc)
+    if (theDict["neighborhood"] is None) and (theDict["range"]!="global") and (theDict["nearLead"] is None):
+        raise makeJriException("You need to specify EITHER a neighborhood, a nearLead, or range=global.", astloc)
+
+    req = JrIRequest(theDict)
+    env.getInterp().addReportRequest(req)
+    return AstValNull(astloc, entryp)
+
+
+def funcReportCoverageLeads(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
+    theDict = {
+        "type": "coverageLeads",
+        "leads": args["leads"].getWrapped(),
+        "label": args["label"].getWrapped(),
+    }
+
+    req = JrIRequest(theDict)
+    env.getInterp().addReportRequest(req)
+    return AstValNull(astloc, entryp)
 # ---------------------------------------------------------------------------

@@ -12,10 +12,10 @@ apt --yes install ca-certificates
 # certbot new way to generate ssl keys?
 apt --yes install certbot
 
-# graphviz
+# graphviz for generating mind/plot maps
 apt --yes install graphviz
 
-# popper tools for pdf to image converstion (this may not be needed..)
+# popper tools for pdf to create images of cover page via pdf2image
 apt --yes install poppler-utils
 
 # imagemagick for image manipulation utility functionality

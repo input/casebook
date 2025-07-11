@@ -95,6 +95,9 @@ class CasebookWrapper:
                 "taskGenerateMindMap": reportMode,
                 "taskSaveLeadJsons": reportMode,
                 "taskSaveHtmlSource": reportMode,
+                #"taskSavePlayManifest": reportMode,
+                "taskSavePlayManifest": jrfuncs.getDictValueOrDefault(build,"savePlayManifest",None),
+                "absoluteUrlBase": jrfuncs.getDictValueOrDefault(build,"absoluteUrlBase",""),
                 #
                 # no longer zip files as part of task but rather as a separate task
                 "taskZipFiles": False,

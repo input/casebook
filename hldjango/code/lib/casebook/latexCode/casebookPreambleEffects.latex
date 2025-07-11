@@ -3,7 +3,8 @@
 
 \newcommand{\imageFullPage}[2]{
 \AddToHookNext{shipout/foreground}{
-  \begin{tikzpicture}[remember picture,overlay, blend mode=multiply]
+  % NOTE: blend mode previously used multiply but this is better for white text over color if we want that
+  \begin{tikzpicture}[remember picture,overlay, blend mode=overlay]
   \node[opacity=#2, black] at (current page.center) {
    \includegraphics[width=\paperwidth,height=\paperheight]{#1}
   };

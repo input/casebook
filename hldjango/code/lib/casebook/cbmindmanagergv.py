@@ -218,9 +218,6 @@ class CbMindManagerGv(CbMindManager):
                     # complain?
                     pass
             #
-            if ("LEADS" in nodeId) or ("LEADS" in label):
-                jrprint("ATTN:DEBUG BREAK")
-            #
             dot.node(nodeId, label, shape=shape, color=color, penwidth=penwidth)
 
 

@@ -5,7 +5,7 @@
 !db/hlDjangoDb.sqlite3
 
 **/*_secret.py
-!code/hldjango/settingsdir/personal_docker_secret.py
+!code/hldjango/settingsdir/standalone_docker_secret.py
 
 **/*.ps1
 **/*.bat
@@ -13,4 +13,10 @@
 **/log*.txt
 **/UNUSED
 **/OLDJUNK
+**/OldJunk
 **/*.bak
+
+**/__pycache__
+*.pyc
+
+media/games/*

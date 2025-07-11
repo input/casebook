@@ -145,6 +145,7 @@ def buildFunctionList():
             CbParam("version", "Version of the location data", "v2", False, AstValString, True),
             CbParam("versionPrevious", "Version of the previous location data (used to help check for migration problems)", "", False, AstValString, True),
             CbParam("seed", "Random number generator seed used for randomizing unused leads", None, True, AstValString, True),
+            CbParam("leadPlugin", "name of plugin used for things like generating dynamic lead numbers, etc.", None, True, AstValString, True),
         ],
         "text", None, None,
         funcConfigureLeadDb
@@ -603,7 +604,7 @@ def buildFunctionList():
 
     #---------------------------------------------------------------------------
     checkTagParams = [
-            CbParam("id", "ID of tag", None, False, AstValString, True),
+            CbParam("id", "ID of tag (separate multiple by commas inside the single string)", None, False, AstValString, True),
             CbParam("check", "check style for multiple tags", "all", False, ["", "any", "all"], True),
             CbParam("box", "box style", None, True, AstValString, True),
             CbParam("noif", "hide the preliminary if", False, False, AstValBool, True),
@@ -681,7 +682,7 @@ def buildFunctionList():
             CbParam("id", "ID of tag", None, False, AstValString, True),
             CbParam("combine", "combine style [and,or] for multiple tags", "all", False, ["", "any", "all"], True),
         ],
-        "text", None, "missing",
+        "text", None, "refer",
         funcReferTag
         ))
 
@@ -1494,7 +1495,7 @@ def buildFunctionList():
 
     functionList.append(CbFunc("defineFont", "Defines a font", [
             CbParam("id", "The id that will refer to the font", None, False, AstValString, True),
-            CbParam("path", "Path to the font within the shared fonts dir", "", False, AstValString, True),
+            CbParam("path", "Path to the font within the shared fonts dir (specify 'default' to base on default font)", "", False, AstValString, True),
             #
             CbParam("size", "base font size (optional; prefer use of scale)", None, True, [AstValString,AstValNumber], True),
             CbParam("scale", "scale the font, use number from 0.1 to 10.0", None, True, AstValNumber, True),
@@ -1838,8 +1839,6 @@ def funcDefineConcept(rmode, env, entryp, leadp, astloc, args, customData, funcN
 def funcToc(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # generate table of contents
 
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
-
     renderer = env.getRenderer()
 
     # args
@@ -1882,8 +1881,6 @@ def funcToc(rmode, env, entryp, leadp, astloc, args, customData, funcName, targe
 
 def funcBlurbCoverPage(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Create a nice cover page snippet which includes title and author from options, as well as any other user custom text/image
-
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
 
     # args
     info = env.getEnvValueUnwrapped(None, "info", None)
@@ -2032,7 +2029,7 @@ def funcBlurbCoverPage(rmode, env, entryp, leadp, astloc, args, customData, func
 def funcInline(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # major function that creates a new lead that is jumped to from within another lead (branching choice)
 
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # args
     inlineLinkArg = args["link"].getWrapped()
@@ -2170,7 +2167,7 @@ def funcInline(rmode, env, entryp, leadp, astloc, args, customData, funcName, ta
 def funcImage(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Embed an image into a pdf
 
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     renderer = env.getRenderer()
 
     # args
@@ -2230,7 +2227,7 @@ def funcImage(rmode, env, entryp, leadp, astloc, args, customData, funcName, tar
 # ---------------------------------------------------------------------------
 def funcRefLead(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Refer to another lead
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # args
     id = args["id"].getWrapped()
@@ -2269,7 +2266,7 @@ def funcRefLead(rmode, env, entryp, leadp, astloc, args, customData, funcName, t
 # ---------------------------------------------------------------------------
 def funcEmbedLead(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Reuse a lead in a new place
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # args
     id = args["id"].getWrapped()
@@ -2296,7 +2293,7 @@ def funcEmbedLead(rmode, env, entryp, leadp, astloc, args, customData, funcName,
 # ---------------------------------------------------------------------------
 def funcEmbedFile(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Embed another pdf inside
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # args
     path = args["path"].getWrapped()
@@ -2391,7 +2388,7 @@ def funcEmbedFile(rmode, env, entryp, leadp, astloc, args, customData, funcName,
 # ---------------------------------------------------------------------------
 def funcAutoHint(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # autohint text tells players where to find tags
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # get an explicit tag list, but fall back on ID OF THIS LEAD as default
     tagList = parseTagListArg(args["id"].getWrapped(), leadp.getId(), env, astloc, True)
@@ -2407,7 +2404,7 @@ def funcAutoHint(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
     tagStringList = []
     for tag in tagList:
         tagStringList.append(tag.getId())
-        tagLeadList = tag.getGainList(True)
+        tagLeadList = tag.getGainList(True, False)
         for tlead in tagLeadList:
             lead = tlead["lead"]
             leadList.append(lead)
@@ -2457,7 +2454,7 @@ def funcAutoHint(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
 # ---------------------------------------------------------------------------
 def funcAutoHintDependencies(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # autohint text tells players where to find tags
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # get an explicit tag list, but fall back on ID OF THIS LEAD as default
     tagList = parseTagListArg(args["id"].getWrapped(), leadp.getId(), env, astloc, True)
@@ -2528,7 +2525,7 @@ def funcAutoHintDependencies(rmode, env, entryp, leadp, astloc, args, customData
 #---------------------------------------------------------------------------
 def funcMark(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # mark some checkboxes
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     typeStr = args["type"].getWrapped()
     count = args["count"].getWrapped()
@@ -2611,7 +2608,7 @@ def funcMark(rmode, env, entryp, leadp, astloc, args, customData, funcName, targ
 #---------------------------------------------------------------------------
 def funcSymbol(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # insert a symbol graphic
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     symbolId = args["id"].getWrapped()
     color = args["color"].getWrapped()
@@ -2626,7 +2623,7 @@ def funcSymbol(rmode, env, entryp, leadp, astloc, args, customData, funcName, ta
 
 #---------------------------------------------------------------------------
 def funcBox(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     boxOptions = parseArgsGenericBoxOptions(args, env, astloc, None)
 
@@ -2650,7 +2647,7 @@ def funcBox(rmode, env, entryp, leadp, astloc, args, customData, funcName, targe
 
 def funcFormat(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # format a block of text with some effect
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     style = args["style"].getWrapped()
     font = args["font"].getWrapped()
@@ -2756,7 +2753,7 @@ def funcFormat(rmode, env, entryp, leadp, astloc, args, customData, funcName, ta
 #---------------------------------------------------------------------------
 def funcModifyText(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # format a block of text with some effect
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     case = args["case"].getWrapped()
 
     # build results
@@ -2794,7 +2791,7 @@ def funcModifyText(rmode, env, entryp, leadp, astloc, args, customData, funcName
 #---------------------------------------------------------------------------
 def funcDivider(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # insert a divider graphic
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     id = args["id"].getWrapped()
     # assemble result
@@ -2817,7 +2814,7 @@ def funcDivider(rmode, env, entryp, leadp, astloc, args, customData, funcName, t
 #---------------------------------------------------------------------------
 def funcSimpleText(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display some text
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # function given simple text via customData
     text = customData
@@ -2827,7 +2824,7 @@ def funcSimpleText(rmode, env, entryp, leadp, astloc, args, customData, funcName
 
 def funcLeaveText(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display some text
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     reason = args["reason"].getWrapped()
     otherwise = args["otherwise"].getWrapped()
@@ -2944,7 +2941,7 @@ def funcLeaveText(rmode, env, entryp, leadp, astloc, args, customData, funcName,
 # ---------------------------------------------------------------------------
 def funcPrint(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display an expression
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     expression = args["expression"].getWrapped()
 
@@ -2955,7 +2952,7 @@ def funcPrint(rmode, env, entryp, leadp, astloc, args, customData, funcName, tar
 
 def funcDebug(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display text in debug mode only
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # some text to ONLY display in debug mode
     # ATTN: TODO - ONLY DISPLAY IN DEBUG MODE
@@ -2973,7 +2970,7 @@ def funcDebug(rmode, env, entryp, leadp, astloc, args, customData, funcName, tar
 
 def funcBreak(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # various breaks
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     typeStr = args["type"].getWrapped()
 
@@ -2990,7 +2987,7 @@ def funcBreak(rmode, env, entryp, leadp, astloc, args, customData, funcName, tar
 # ---------------------------------------------------------------------------
 def funcAdvanceTime(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # advance time
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     time = args["time"].getWrapped()
     box = args["box"].getWrapped()
@@ -3019,7 +3016,7 @@ def funcAdvanceTime(rmode, env, entryp, leadp, astloc, args, customData, funcNam
 
 def funcTimeHere(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # show time here (instead of at bottom)
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     deferredResult = CbDeferredBlockLeadTime(astloc, entryp, leadp)
     leadp.setTimePos("hidden")
@@ -3028,7 +3025,7 @@ def funcTimeHere(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
 
 def funcHeaderHere(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # show header at this location (instead of at top)
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     
     deferredResult = CbDeferredBlockLeadHeader(astloc, entryp, leadp)
     # tell the lead to NOT auto render header
@@ -3043,7 +3040,7 @@ def funcHeaderHere(rmode, env, entryp, leadp, astloc, args, customData, funcName
 # ---------------------------------------------------------------------------
 def funcDayTest(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # text to test what day it is
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     dayNumber = args["day"].getWrapped()
     flagAllowTempCalculatedDay = False
@@ -3093,7 +3090,7 @@ def funcDayTest(rmode, env, entryp, leadp, astloc, args, customData, funcName, t
 # ---------------------------------------------------------------------------
 def funcDayInstructions(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # show instructions for a specified day, which includes a list of tags that must be found, and information about start and end times, etc.
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     dayNumber = args["day"].getWrapped()
     whenStr = args["when"].getWrapped()
@@ -3226,7 +3223,7 @@ def funcDayInstructions(rmode, env, entryp, leadp, astloc, args, customData, fun
 
 def funcBlurbStop(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display a "STOP" warning message
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     typeStr = args["type"].getWrapped()
     dayNumber = args["day"].getWrapped()
@@ -3329,7 +3326,7 @@ def funcBlurbStop(rmode, env, entryp, leadp, astloc, args, customData, funcName,
 # ---------------------------------------------------------------------------
 def funcBlurb(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display a "STOP" warning message
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     typeStr = args["type"].getWrapped()
     #
@@ -3376,7 +3373,7 @@ def funcBlurb(rmode, env, entryp, leadp, astloc, args, customData, funcName, tar
 # ---------------------------------------------------------------------------
 def funcLogic(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # add a logic relationship
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     if (leadp is None):
         # this is not a real rendering lead so we do not record logic entry for it
@@ -3493,7 +3490,7 @@ def funcLogic(rmode, env, entryp, leadp, astloc, args, customData, funcName, tar
 #---------------------------------------------------------------------------
 def funcAuthorNote(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # marks a target block to ONLY be shown in author debug output
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     
     label = args["label"].getWrapped()
 
@@ -3517,7 +3514,7 @@ def funcAuthorNote(rmode, env, entryp, leadp, astloc, args, customData, funcName
         msg = "Author note"
     else:
         msg = "Author Note ({})".format(label)
-    note = JrINote("authorNote", leadp, msg, None, None)
+    note = JrINote("authorNote", None, leadp, msg, None, None)
     env.addNote(note)
     # use this note as start of text box contents
     results.flatAdd(msg+"\n\n")
@@ -3538,7 +3535,7 @@ def funcAuthorNote(rmode, env, entryp, leadp, astloc, args, customData, funcName
 #---------------------------------------------------------------------------
 def funcMarginNote(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display some text in the margin
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     
     position = args["pos"].getWrapped()
 
@@ -3655,6 +3652,7 @@ def funcConfigureLeadDb(rmode, env, entryp, leadp, astloc, args, customData, fun
     data = env.getEnvValueUnwrapped(None, "leadDbData", None)
     data["version"] = args["version"].getWrapped()
     data["versionPrevious"] = args["versionPrevious"].getWrapped()
+    data["leadPlugin"] = args["leadPlugin"].getWrapped()
     seed = args["seed"].getWrapped()
 
     if (seed is None):
@@ -3729,7 +3727,7 @@ def funcPageStyle(rmode, env, entryp, leadp, astloc, args, customData, funcName,
 def funcPageBackground(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # show a packground pic that covers whole page
     # see https://tex.stackexchange.com/questions/167719/how-to-use-background-image-in-latex
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # args
     path = args["path"].getWrapped()
@@ -3765,7 +3763,7 @@ def funcPageBackground(rmode, env, entryp, leadp, astloc, args, customData, func
 #---------------------------------------------------------------------------
 def funcDropCaps(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # drop cap effect has big first letter of sentence
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     
     # options
     optionStyle = args["style"].getWrapped()
@@ -3790,7 +3788,7 @@ def funcDropCaps(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
 #---------------------------------------------------------------------------
 def funcEffectUp(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # drop cap effect has big first letter of sentence
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     
     # options
     text = args["text"].getWrapped()
@@ -3817,7 +3815,7 @@ def funcEffectUp(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
 #---------------------------------------------------------------------------
 def funcLipsum(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # insert filler text for testing
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     start = args["start"].getWrapped()
     end = args["end"].getWrapped()
@@ -3886,7 +3884,7 @@ def funcDesignateFile(rmode, env, entryp, leadp, astloc, args, customData, funcN
 #---------------------------------------------------------------------------
 def funcQuote(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # insert a nice looking big quote
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     style = args["style"].getWrapped()
     cite= args["cite"].getWrapped()
@@ -3985,7 +3983,7 @@ def funcQuote(rmode, env, entryp, leadp, astloc, args, customData, funcName, tar
 #---------------------------------------------------------------------------
 def funcBlock(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # insert a nice looking big quote
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     align = args["align"].getWrapped()
 
@@ -4093,26 +4091,27 @@ def funcConfigureSection(rmode, env, entryp, leadp, astloc, args, customData, fu
     return doFuncConfigureSectionWithId(sectionId, rmode, env, entryp, leadp, astloc, args, customData, funcName, targets, True)
 
 def funcConfigureLeads(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    sectionId = "LEADS"
+    sectionId = JrCbMainSectionName_Leads
     return doFuncConfigureSectionWithId(sectionId, rmode, env, entryp, leadp, astloc, args, customData, funcName, targets, True)
 
 
 def funcConfigureHints(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    sectionId = "HINTS"
+    sectionId = JrCbMainSectionName_Hints
     return doFuncConfigureSectionWithId(sectionId, rmode, env, entryp, leadp, astloc, args, customData, funcName, targets, True)
 
 def funcConfigureReport(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    sectionId = "REPORT"
+    sectionId = JrCbMainSectionName_Report
     return doFuncConfigureSectionWithId(sectionId, rmode, env, entryp, leadp, astloc, args, customData, funcName, targets, True)
 
 def funcConfigureFront(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    sectionId = "FRONT"
+    sectionId = JrCbMainSectionName_Front
     return doFuncConfigureSectionWithId(sectionId, rmode, env, entryp, leadp, astloc, args, customData, funcName, targets, True)
 
 def funcConfigureEnd(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    sectionId = "END"
+    sectionId = JrCbMainSectionName_End
     return doFuncConfigureSectionWithId(sectionId, rmode, env, entryp, leadp, astloc, args, customData, funcName, targets, True)
 #---------------------------------------------------------------------------
+
 
 
 #---------------------------------------------------------------------------
@@ -4215,6 +4214,12 @@ def doFuncConfigureEntry(flagDoneOverride, rmode, env, entryp, leadp, astloc, ar
 
     # dividers
     jrfuncs.callSetIfValNotNone(entryp.setDividers, args["dividers"].getWrapped())
+
+    # we always reserve the id, so its never generated as an auto random id; its ok to call this with leads that dont exit in db
+    renderer = env.getRenderer()
+    hlApi = renderer.getHlApi()
+    entryId = entryp.getId()
+    hlApi.reserveLead(entryId)
 #---------------------------------------------------------------------------
 
 
@@ -4264,7 +4269,7 @@ def funcConfigureDay(rmode, env, entryp, leadp, astloc, args, customData, funcNa
 #---------------------------------------------------------------------------
 def funcBlurbDay(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display some information about a day
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     dayNumber = args["day"].getWrapped()
     typeStr = args["type"].getWrapped()
@@ -4356,7 +4361,7 @@ def funcBlurbDay(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
 #---------------------------------------------------------------------------
 def funcDate(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # convert a mm/dd/yyyy date to a string like "Tuesday, June 10th, 1915"
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     dateStr = args["date"].getWrapped()
     flagYear = args["year"].getWrapped()
@@ -4458,7 +4463,7 @@ def funcDayDate(rmode, env, entryp, leadp, astloc, args, customData, funcName, t
 #---------------------------------------------------------------------------
 def funcMentionTags(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # mention a list of tags
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     tagList = parseTagListArg(args["tags"].getWrapped(), "", env, astloc, True)
 
@@ -4485,7 +4490,7 @@ def funcMentionTags(rmode, env, entryp, leadp, astloc, args, customData, funcNam
 
 def funcReferTag(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # check if play has tag
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     tagList = parseTagListArg(args["id"].getWrapped(), "", env, astloc, True)
     check = args["combine"].getWrapped()
@@ -4537,7 +4542,7 @@ def funcReferTag(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
 # ---------------------------------------------------------------------------
 def funcGainTag(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # player gains one or more tags
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     id = args["id"].getWrapped()
     tagActionKeyword = customData["action"]
@@ -4618,7 +4623,7 @@ def funcGainTag(rmode, env, entryp, leadp, astloc, args, customData, funcName, t
 # ---------------------------------------------------------------------------
 def funcCheckTag(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # check if play has tag
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     boxStyle = args["box"].getWrappedOrDefault("none")
     tagList = parseTagListArg(args["id"].getWrapped(), "", env, astloc, True)
@@ -4665,7 +4670,7 @@ def funcCheckTag(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
 
 # ---------------------------------------------------------------------------
 def funcInstructTag(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     boxStyle = args["box"].getWrappedOrDefault("default")
     tagList = parseTagListArg(args["id"].getWrapped(), "", env, astloc, True)
@@ -5586,7 +5591,7 @@ def funcFingerprint(rmode, env, entryp, leadp, astloc, args, customData, funcNam
     msg = 'Embedded fingerprint image: "{}"'.format(notePath)
     msgLatex = 'Embedded fingerprint image: "\\path{' + notePath + '}"'
     extras = {"filePath": imageFullPath, "caption": caption, "fpLead":id, "fpFinger": fingerId, "set": False}
-    note = JrINote("fingerPrint", leadp, msg, msgLatex, extras)
+    note = JrINote("fingerPrint", None, leadp, msg, msgLatex, extras)
     env.addNote(note)
 
     # results
@@ -5656,7 +5661,7 @@ def funcFingerprintSet(rmode, env, entryp, leadp, astloc, args, customData, func
     msg = 'Embedded fingerprint set: "{}"'.format(id)
     msgLatex = msg
     extras = {"filePath": imageFullPath, "caption": caption, "fpLead":id, "fpFinger": fingerId, "set": True}
-    note = JrINote("fingerPrintSet", leadp, msg, msgLatex, extras)
+    note = JrINote("fingerPrintSet", None, leadp, msg, msgLatex, extras)
     env.addNote(note)
 
     # results
@@ -5685,7 +5690,7 @@ def funcFingerprintPath(rmode, env, entryp, leadp, astloc, args, customData, fun
     msg = 'Embedded fingerprint image path: "{}"'.format(notePath)
     msgLatex = 'Embedded fingerprint image path: "\\path{' + notePath + '}"'
     extras = {"filePath": imageFullPath, "caption": fingerCaption, "fpLead":id, "fpFinger": fingerId, "set": False}
-    note = JrINote("fingerPrint", leadp, msg, msgLatex, extras)
+    note = JrINote("fingerPrint", None, leadp, msg, msgLatex, extras)
     env.addNote(note)
 
     return relativePath
@@ -5849,7 +5854,7 @@ def funcDebugFonts(rmode, env, entryp, leadp, astloc, args, customData, funcName
 def funcImageBehind(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Embed an image into a pdf
 
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     renderer = env.getRenderer()
 
     # args
@@ -5978,7 +5983,7 @@ def funcImageBehind(rmode, env, entryp, leadp, astloc, args, customData, funcNam
 def funcImageMask(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Embed an image into a pdf
 
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     renderer = env.getRenderer()
 
     # args
@@ -6093,7 +6098,7 @@ def funcImageMask(rmode, env, entryp, leadp, astloc, args, customData, funcName,
 def funcCipher(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Embed an image into a pdf
 
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # args
     method = args["method"].getWrapped()
@@ -6251,7 +6256,7 @@ def funcCipher(rmode, env, entryp, leadp, astloc, args, customData, funcName, ta
 def funcRedact(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Embed an image into a pdf
 
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # args
     text = args["text"].getWrapped()
@@ -6282,7 +6287,7 @@ def funcRedact(rmode, env, entryp, leadp, astloc, args, customData, funcName, ta
 def funcCensor(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Embed an image into a pdf
 
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     # args
     text = args["text"].getWrapped()
@@ -6420,7 +6425,7 @@ def funcRenderTargetsInUserFunction(rmode, env, entryp, leadp, astloc, args, cus
 # ---------------------------------------------------------------------------
 def funcForm(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display form field
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
 
     typeStr = args["type"].getWrapped()
     sizeVal = args["size"].getWrapped()
@@ -6460,7 +6465,7 @@ def funcForm(rmode, env, entryp, leadp, astloc, args, customData, funcName, targ
 # ---------------------------------------------------------------------------
 def funcFormText(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display form field
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     lines = args["lines"].getWrapped()
     widthStr = args["width"].getWrapped()
     pt = args["pt"].getWrapped()
@@ -6472,7 +6477,7 @@ def funcFormText(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
 
 def funcFormLine(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display form field
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     marginStr = args["margin"].getWrapped()
     pt = args["pt"].getWrapped()
     safeMarginStr = convertStringToSafeLatexSize(marginStr, r"\columnwidth", r"\columnwidth", r"0.95\columnwidth", 1.0)
@@ -6493,7 +6498,7 @@ def funcFormLine(rmode, env, entryp, leadp, astloc, args, customData, funcName, 
 
 def funcFormShort(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display form field
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     widthStr = args["width"].getWrapped()
     pt = args["pt"].getWrapped()
     #
@@ -6513,7 +6518,7 @@ def funcFormShort(rmode, env, entryp, leadp, astloc, args, customData, funcName,
 
 def funcFormNumber(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display form field
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     widthStr = args["width"].getWrapped()
     pt = 1
     #
@@ -6534,7 +6539,7 @@ def funcFormNumber(rmode, env, entryp, leadp, astloc, args, customData, funcName
 
 def funcFormCheckList(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display form field
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     choices = args["choices"].getWrapped()
     other = args["other"].getWrapped()
     #
@@ -6548,7 +6553,7 @@ def funcFormCheckList(rmode, env, entryp, leadp, astloc, args, customData, funcN
 
 def funcFormRadioList(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # display form field
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     choices = args["choices"].getWrapped()
     other = args["other"].getWrapped()
     #
@@ -6682,7 +6687,7 @@ def funcFormatList(rmode, env, entryp, leadp, astloc, args, customData, funcName
 def funcImageOverlay(rmode, env, entryp, leadp, astloc, args, customData, funcName, targets):
     # Embed an image into a pdf
 
-    exceptionIfNotRenderMode(rmode, funcName, env, astloc)
+
     renderer = env.getRenderer()
 
     # args

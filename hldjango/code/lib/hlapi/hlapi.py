@@ -29,6 +29,7 @@ class HlApi:
         self.options = options
         #
         self.unusedLeads = None
+        self.fullUnusedLeadList = None
         self.leads = None
         self.regionData = None
         #
@@ -41,6 +42,8 @@ class HlApi:
         self.fingerprinter = None
         #
         self.reservedLeads = []
+        #
+        self.pluginp = None
 
     def getThisSourceDirectory(self):
         source_path = Path(__file__).resolve()
@@ -65,11 +68,13 @@ class HlApi:
     def setDisabled(self, val):
         self.disabled = val
 
-    def configure(self, options):
+    def configureHlApi(self, options, pluginp):
         # overwrite options with new
         jrfuncs.deepMergeOverwriteA(self.options, options)
         # force reload
         self.unusedLeads = None
+        self.fullUnusedLeadList = None
+        self.setPluginp(pluginp)
 
     def calcDataDir(self):
         if ("dataVersion" not in self.options):
@@ -91,6 +96,10 @@ class HlApi:
     def getOption(self, key, defaultVal):
         return jrfuncs.getDictValueOrDefault(self.options, key, defaultVal)
 
+    def setPluginp(self, pluginp):
+        self.pluginp = pluginp
+    def getPluginp(self):
+        return self.pluginp
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +111,7 @@ class HlApi:
         
         # kludge; support for unused lead generators
         dataVersion = self.options["dataVersion"]
-        generatedUnusedLeads = self.generateUnusedLeadsUsingPattern(dataVersion)
+        generatedUnusedLeads = self.generateUnusedLeadsUsingPatternIfAppropriate(dataVersion)
         if (generatedUnusedLeads is not None):
             # use this list
             for leadId in generatedUnusedLeads:
@@ -142,9 +151,11 @@ class HlApi:
             prng.shuffle(self.unusedLeads)
         # itereate list of unused rows and build disctionary by lead
         self.unusedLeads = {}
+        self.fullUnusedLeadList = []
         for row in unUsedLeadRowList:
             leadId = row["lead"]
             self.unusedLeads[leadId] = row
+            self.fullUnusedLeadList.append(leadId)
 # ---------------------------------------------------------------------------
 
 
@@ -209,6 +220,8 @@ class HlApi:
             rows = []
             for row in features:
                 #thisRow = row['properties']
+                if ('properties' not in row):
+                    raise Exception("In loadLeadFile {} ({}), failed to find properties in row: {}.".format(filePath, fileSourceLabel, row))
                 rows.append(row)
 
             if (self.flagDebug):
@@ -220,15 +233,17 @@ class HlApi:
         #jrprint('Loading region data from "{}"..'.format(filePath))
         encoding='utf-8'
         self.regionData = []
-        with open(filePath, 'r', encoding=encoding) as jsonFile:
-            jsonRows = json.load(jsonFile)
-            features = jsonRows['features']
-            rows = []
-            for row in features:
-                rows.append(row)
-            if (self.flagDebug):
-                jrprint('Loaded {} regions from "{}"'.format(len(features), filePath))
-            self.regionData = rows
+        if (jrfuncs.pathExists(filePath)):
+            with open(filePath, 'r', encoding=encoding) as jsonFile:
+                jsonRows = json.load(jsonFile)
+                features = jsonRows['features']
+                rows = []
+                for row in features:
+                    rows.append(row)
+                if (self.flagDebug):
+                    jrprint('Loaded {} regions from "{}"'.format(len(features), filePath))
+                self.regionData = rows
+
 
 
 
@@ -250,6 +265,18 @@ class HlApi:
                     return [row, sourceKey]
         # not found
         return [None, None]
+
+
+
+    def findLeadRowsByLeadIds(self, leadIdList):
+        rows = []
+        for leadId in leadIdList:
+            [row, sourceKey] = self.findLeadRowByLeadId(leadId)
+            if (row is None):
+                raise Exception("Lead not found in coverage report ({}).".format(leadId))
+            rows.append(row["properties"])
+        return rows
+
 
 
     def findLeadRowByNameOrAddress(self, txt):
@@ -366,7 +393,7 @@ class HlApi:
         leadRowProperties = leadRow["properties"]
         listype  = leadRowProperties["listype"]
         if (flagHidePrivate) and (listype=="private"):
-            return ""
+            return ["", ""]
         #
         address = leadRowProperties["address"]
         jregion = leadRowProperties["jregion"]
@@ -421,7 +448,8 @@ class HlApi:
         
     def writeOutUsedLeadJsons(self, saveDir, baseFilename, forceSourceLabel):
         fileList = []
-        fictionalSourceList = self.getFictionalLeadSourceNameList()
+        exportSourceList = self.getExportLeadSourceNameList()
+        manualSourceList = self.getManualSourceNameList()
         leadFeatures = {}
 
         #if (len(self.usedLeads) == 0):
@@ -437,32 +465,45 @@ class HlApi:
             source = existingLeadRowProperties['source'] if ('source' in existingLeadRowProperties) else fileSource
             ptype = existingLeadRowProperties['ptype']
             #
+
             # build copy of row (copy so we can add/change props)
-            propCopy = jrfuncs.deepCopyListDict(existingLeadRowProperties)
+            propCopyTweaked = jrfuncs.deepCopyListDict(existingLeadRowProperties)
             # add items
-            propCopy['jfrozen'] = 110
-            propCopy['source'] = forceSourceLabel
+            propCopyTweaked['source'] = source
+            propCopyTweaked['jfrozen'] = 110
             # build new row
             geometry = existingLeadRow['geometry']
-            featureRow = {"type": "Feature", "properties": propCopy, "geometry": geometry}
+            featureRowTweaked = {"type": "Feature", "properties": propCopyTweaked, "geometry": geometry}            
+
+            #propCopyWithFileSource = jrfuncs.deepCopyListDict(propCopy)
+            #propCopyWithFileSource['fileSource'] = fileSource
+            #featureRowWithFileSource = {"type": "Feature", "properties": existingLeadRowProperties, "geometry": geometry}
 
             # add only fictional to special fictional files
-            if (source in fictionalSourceList):
+            if (source in exportSourceList):
+                propCopyTweaked['source'] = forceSourceLabel
                 # add it to save list
                 if (ptype not in leadFeatures):
                     leadFeatures[ptype] = []
                 #
-                leadFeatures[ptype].append(featureRow)
+                leadFeatures[ptype].append(featureRowTweaked)
+            #
+            elif (source in manualSourceList):
+                # add it to save list
+                if ("manuals" not in leadFeatures):
+                    leadFeatures["manuals"] = []
+                #
+                leadFeatures["manuals"].append(featureRowTweaked)
 
             # add ALL rows to formap, and this time also add geometry
             fname = 'allForMap'
             if (fname not in leadFeatures):
                 leadFeatures[fname] = []
-            leadFeatures[fname].append(featureRow)     
+            leadFeatures[fname].append(featureRowTweaked)
 
         if (True):
             # lets ALWAYS write out these two files (empty versions) just so we KNOW when they are intentionally black
-            emptyList = ["person", "yellow"]
+            emptyList = ["person", "yellow", "manuals"]
             for i in emptyList:
                 if (i not in leadFeatures):
                     leadFeatures[i+"_empty"] = []
@@ -471,7 +512,7 @@ class HlApi:
         jrfuncs.createDirIfMissing(saveDir)
 
         # delete previous even if we dont generate them
-        for ptype in fictionalSourceList:
+        for ptype in exportSourceList:
             outFilePath = self.makeLeadDbOutFilePath(saveDir, baseFilename, ptype)
             jrfuncs.deleteFilePathIfExists(outFilePath)
         
@@ -505,12 +546,17 @@ class HlApi:
         return saveDir + '/{}_dbuserleads_{}.json'.format(baseFilename, ptype)
 
 
-    def getFictionalLeadSourceNameList(self):
+    def getExportLeadSourceNameList(self):
         return ['yellow', 'places_yellow', 'people', 'places_people', 'person']
+    def getVolatileLeadSourceNameList(self):
+        return ['yellow', 'places_yellow', 'people', 'places_people', 'person']
+    def getManualSourceNameList(self):
+        return ['people_manual', 'places_manual', 'places_poijr','places_bestny', 'places_people']
+
 
 
     def isLeadRowSourceFromVolatileDb(self, sourceKey):
-        fictionalSourceList = self.getFictionalLeadSourceNameList()
+        fictionalSourceList = self.getVolatileLeadSourceNameList()
         if (sourceKey in fictionalSourceList):
             return True
         return False
@@ -581,7 +627,7 @@ class HlApi:
 
 
 
-    def generateUnusedLeadsUsingPattern(self, dataVersion):
+    def generateUnusedLeadsUsingPatternIfAppropriate(self, dataVersion):
         if (dataVersion=="numbers99"):
             return list(range(10,99))
         elif (dataVersion=="numbers999"):
@@ -793,18 +839,42 @@ class HlApi:
 
 
 
+# ---------------------------------------------------------------------------
+# ATTN: these need to be delegated to the plugin
+    def getNumericLeadRange(self):
+        pluginp = self.getPluginp()
+        if (pluginp is None):
+            leadRange = [0, len(self.fullUnusedLeadList)-1]
+        else:
+            leadRange = pluginp.generatePotentialUnusedLeadNumericRange(self.fullUnusedLeadList)
+        return leadRange
+
+    
+    def calcLeadIdFromNumber(self, leadIdAsNumber):
+        pluginp = self.getPluginp()
+        if (pluginp is None):
+            leadId = self.fullUnusedLeadList[leadIdAsNumber]
+        else:
+            leadId = pluginp.generatePotentialUnusedLeadFromIdAsNumber(leadIdAsNumber, self.fullUnusedLeadList)
+        return leadId
+# ---------------------------------------------------------------------------
+
 
 
 # ---------------------------------------------------------------------------
-    def getNumericLeadRange(self):
-        return [1000, 99999]
-    
-    def calcLeadIdFromNumber(self, leadIdAsNumber):
-        # convert a number in range 1000-99999 to standard lead #-#### format
+# for New York Noir, here is the lead ranges for unused leads
+    def generatePotentialUnusedLeadNumericRange(self):
+        return [11000, 99999]
+
+    def generatePotentialUnusedLeadFromIdAsNumber(self, leadIdAsNumber):
         lstring = str(leadIdAsNumber)
         leadId = "{}-{}".format(lstring[0], lstring[1:])
         return leadId
+# ---------------------------------------------------------------------------
 
+
+
+# ---------------------------------------------------------------------------
     # we want a way of choosing stable unused lead that's don't change after modifications to game source
     def chooseUnusedLeadUsingStableHashKey(self, hashKeyString):
         if (not self.checkLoadUnusedLeads()):
@@ -850,6 +920,123 @@ class HlApi:
         num = stringToFeistelRange(keyStringTry, rmin, rmax, seedKey, roundsToRun)
         return num
 # ---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------------------------------------------------------------------
+# neighborhood (jresion) helpers
+    def calcJregionListGlobal(self):
+        self.loadLeadsIfNeeded()
+        #
+        jregionsList = []
+        for row in self.regionData:
+            jregion = row['properties']['jregion']
+            jregionsList.append(jregion)
+        return jregionsList
+
+    def calcJregionListNear(self, neighborhoodList):
+        self.loadLeadsIfNeeded()
+        #
+        jregionsList = []
+        for jregion in neighborhoodList:
+            if (not jregion in jregionsList):
+                # add this neighborhood
+                jregionsList.append(jregion)
+            # now find it in region list and add nearbys
+            regionRow = self.findJregionDataRow(jregion, True)
+            if (not regionRow is None):
+                nearJregions = regionRow['jregionsNear']
+                nearJregionsList = nearJregions.split(",")
+                for nearJregion in nearJregionsList:
+                    if (not nearJregion in jregionsList):
+                        jregionsList.append(nearJregion)
+        return jregionsList
+
+    def validateJregionList(self, neighborhoodList):
+        self.loadLeadsIfNeeded()
+        #
+        for jregion in neighborhoodList:
+            # exception if the jregion is not known
+            regionRow = self.findJregionDataRow(jregion, True)
+        return True
+    
+    def findJregionDataRow(self, jregion, flagErrorIfNotFound):
+        for row in self.regionData:
+            njregion = row['properties']['jregion']
+            if (njregion == jregion):
+                return row['properties']
+        if (flagErrorIfNotFound):
+            raise Exception("Could not find jregion '{}' in region data list.".format(jregion))
+        return None
+# ---------------------------------------------------------------------------
+
+
+
+# ---------------------------------------------------------------------------
+# search for rows by criteria (firstName, lastName, )
+    def searchRows(self, searchOptions, searchFilter):
+        searchPtype = searchOptions['ptype']
+        jregionList = searchOptions['jregionList']
+        andOr = searchOptions['andOr']
+        #
+        self.loadLeadsIfNeeded()
+        #
+        retRows = []
+
+        for sourceKey, leadRows in self.leads.items():
+            for row in leadRows:
+                rowProperties = row['properties']
+                ptype = rowProperties['ptype']
+                jregion = rowProperties['jregion']
+
+                # first level filter
+                if (ptype != searchPtype):
+                    continue
+                if (not jregion in jregionList):
+                    continue
+                # now by other filters
+                if (andOr=='or'):
+                    addIt = False
+                else:
+                    addIt = True
+                for k,v in searchFilter.items():
+                    rowVal = rowProperties[k]
+                    if (rowVal == v):
+                        # got a match
+                        if (andOr=='or'):
+                            # good enough
+                            addIt = True
+                            break
+                    else:
+                        if (andOr=='and'):
+                            addIt = False
+                            break
+                if (addIt):
+                    retRows.append(rowProperties)
+
+        return retRows
+
+# ---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 
 
@@ -1155,13 +1342,6 @@ class HlApiTable(HlApi):
         filePath = fileDir + "/ParagraphLookupTable" + self.options["outSuffix"] + ".latex"
         jrfuncs.saveTxtToFile(filePath, latex, "utf-8")
 # ---------------------------------------------------------------------------
-
-
-
-
-
-
-
 
 
 

@@ -66,7 +66,7 @@ RUN chmod +x ./pip_install.sh; ./pip_install.sh
 RUN chmod +x ./apt_install.sh; ./apt_install.sh
 
 
-# THESE THREE LINES ONLY IF TRYING NGJINX
+# If we are using nginx there are a few more things that need to be done
 RUN if [ $JR_DJANGO_WEBSERVER = "nginx" ]; then \
 	# timezone set
 	ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone; \

@@ -166,7 +166,7 @@ class CbDeepSource:
             chunkComment = locDict["comment"]
             msg = 'Including casebook source file: "{}" at location {}'.format(fileNameRelative, locationText)
             msgLatex = 'Including casebook source file: "\\path{' + fileNameRelative + '}" at location ' + '\\path{' + chunkFilePath + '} ' + 'at line \\#{} position {}'.format(chunkLineNumber, chunkLineOffsetPos)
-            note = JrINote("embedSource", None, msg, msgLatex, None)
+            note = JrINote("embedSource", None, None, msg, msgLatex, None)
             env.addNote(note)
 
             # increment

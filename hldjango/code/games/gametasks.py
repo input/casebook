@@ -202,7 +202,6 @@ def queueTaskBuildStoryPdf(gameModelPk, requestOptions, task=None):
         # build debug format
         suffix = calcDefaultSuffixForBuildMode(buildMode)
         build = {"label": "debug build", "task": "latexBuildPdf", "exsuffix": suffix, "reportMode": True, "convert": "jpg", "convertSuffix": "_cover", "paperSize": preferredFormatPaperSize, "layout": preferredFormatLayout, "gameFileType": gamefilemanager.EnumGameFileTypeName_Debug, "outputPath": gfmanager.getDirectoryPathForGameType(gamefilemanager.EnumGameFileTypeName_Debug)}
-        #build["convert"] = "jpg"
         addCalculatedFieldsToBuild(build, game)
         buildList.append(build)
         if (optionZipFiles):
@@ -214,7 +213,7 @@ def queueTaskBuildStoryPdf(gameModelPk, requestOptions, task=None):
     if (buildMode in ["buildDraft"]):
         suffix = calcDefaultSuffixForBuildMode(buildMode)
         # build complete list; all combinations of page size and layout
-        buildList += generateCompleteBuildList(game, gfmanager)
+        buildList += generateCompleteDraftBuildList(game, gfmanager)
         if (optionZipFiles):
             # build zip
             zipBuild = {"label": "zipping built files", "task": "zipFiles", "suffix": suffix, "gameFileType": gamefilemanager.EnumGameFileTypeName_DraftBuild, "outputPath": gfmanager.getDirectoryPathForGameType(gamefilemanager.EnumGameFileTypeName_DraftBuild)}
@@ -417,7 +416,9 @@ def calcDefaultSuffixForBuildMode(buildMode):
 
 
 
-def generateCompleteBuildList(game, gfmanager):
+def generateCompleteDraftBuildList(game, gfmanager):
+    # THIS IS used when doing a DRAFT build, and can queue multiple things
+
     # loop twice, the first time just calculate buildCount
     # imports needing in function to avoid circular?
     from games.models import Game
@@ -452,8 +453,15 @@ def generateCompleteBuildList(game, gfmanager):
         # programmatic
         # we make two passes since the first pass can just count the builds needed
         for stage in ["precount","run"]:
-            for paperSize in Game.GameFormatPaperSizeCompleteList:
-                for layout in Game.GameFormatLayoutCompleteList:
+            for layout in Game.GameFormatLayoutCompleteList:
+                if (layout == Game.GameFormatLayoutCanonicalForScreenPlay):
+                    # this is for screen play, we only make one format, 
+                    canonicalScreenPlay = True
+                    paperList = [Game.GameFormatPaperSizeCanonicalScreenPlay]
+                else:
+                    canonicalScreenPlay = False
+                    paperList = Game.GameFormatPaperSizeCompleteList
+                for paperSize in paperList:
                     # skip certain configurations
                     leadColumns = calcLeadColumnsFromLayout(layout)
                     maxColumns = calcMaxColumnsFromPaperSize(paperSize)
@@ -469,6 +477,8 @@ def generateCompleteBuildList(game, gfmanager):
                     #
                     build = {"label": label, "task": "latexBuildPdf", "cleanExtras": True, "paperSize": paperSize, "layout": layout, "gameFileType": gameFileType, "gameFileType": gameFileType, "outputPath": gfmanager.getDirectoryPathForGameType(gameFileType)}
                     addCalculatedFieldsToBuild(build, game)
+                    if (canonicalScreenPlay):
+                        build["savePlayManifest"] = True
                     buildList.append(build)
 
     # summary in letter format?
@@ -672,6 +682,9 @@ def publishBuildFiles(buildDir, buildList, publishDir):
 
 def addCalculatedFieldsToBuild(build, game):
     #
+    from games import gamefilemanager
+    from games.gamefilemanager import GameFileManager, generateAbsoluteUrlForRelativePath
+
     task = build["task"]
     if (task == "zipFiles"):
         # done
@@ -711,6 +724,18 @@ def addCalculatedFieldsToBuild(build, game):
 
     # new, add gamePk to build dictionary
     build["gamePk"] = game.pk
+
+    # can we add urlBase?
+    gfmanager = GameFileManager(game)
+    # instead of using real game file type we force PUBLISHED since thats where actual files will be eventually
+    if (False):
+        gameFileTypeName = build["gameFileType"]
+    else:
+        gameFileTypeName = gamefilemanager.EnumGameFileTypeName_Published
+    #
+    urlBase = gfmanager.getBaseUrlPathForGameType(gameFileTypeName)
+    absoluteUrlBase = generateAbsoluteUrlForRelativePath(urlBase)
+    build["absoluteUrlBase"] = absoluteUrlBase
 
 
     # ATTN: in order for these to propagate to render options they need to be also set in casebookwrapper.py

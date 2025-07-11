@@ -37,6 +37,7 @@ pycipher = "^0.5.2"
 django-sendgrid-v5 = "^1.2.4"
 django-dbbackup = "^4.3.0"
 redis = "^6.2.0"
+pypdf2 = "^3.0.1"
 
 
 [build-system]

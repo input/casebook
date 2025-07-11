@@ -30,6 +30,8 @@ from lib.hlapi import hlapi
 
 # python
 import os
+import json
+
 
 
 
@@ -101,7 +103,9 @@ class JrInterpreterCasebook(JrInterpreter):
         self.preBuildPreRender(env)
 
 
-
+    def getFingerprintImageDirectoryPath(self):
+        hlApi = self.getHlApi()
+        return hlApi.getFingerprintImageDirectoryPath()
 
     
 
@@ -359,6 +363,7 @@ class JrInterpreterCasebook(JrInterpreter):
         taskGenerateMindMap = task.getOption("taskGenerateMindMap")
         taskSaveLeadJsons = task.getOption("taskSaveLeadJsons")
         taskSaveHtmlSource = task.getOption("taskSaveHtmlSource")
+        taskSavePlayManifest = task.getOption("taskSavePlayManifest")
         taskSavePlainText = taskSaveHtmlSource
         taskZipFiles = task.getOption("taskZipFiles")
         cleanExtras = task.getOption("cleanExtras")
@@ -409,6 +414,15 @@ class JrInterpreterCasebook(JrInterpreter):
                 sourceFileText = jrfuncs.getDictValueOrDefault(parserOptions, "sourceFileText", None)
                 #
                 retv = self.saveHtmlSource(task, sourceFilePath, sourceFileText, suffixedOutputPath, baseFileName)
+
+            # save html version (note we do this late now so that we have proper hlapi loaded)
+            if (taskSavePlayManifest):
+                # higher level parser options
+                parserOptions = jrfuncs.getDictValueOrDefault(job, "parserOptions", None)
+                sourceFilePath = jrfuncs.getDictValueOrDefault(parserOptions, "sourceFilePath", None)
+                #
+                retv = self.savePlayManifest(task, sourceFilePath, suffixedOutputPath, suffixedBaseFileName, baseFileName, fileList)
+
 
             if (convert is not None) and (convert != ""):
                 # NOT IMPLEMENTED YET
@@ -584,6 +598,254 @@ class JrInterpreterCasebook(JrInterpreter):
 
 
 
-    def getFingerprintImageDirectoryPath(self):
-        hlApi = self.getHlApi()
-        return hlApi.getFingerprintImageDirectoryPath()
+
+
+
+
+
+    def savePlayManifest(self, task, sourceFilePath, outputPath, suffixedBaseFileName, baseFilename, fileList):
+        # new attempt to create a nice json game play manifest
+        playManifest = {}
+
+        # walk all rendered items and add their info
+        # ATTN: TODO
+        env = self.getEnvironment()
+        renderer = env.getRenderer()
+
+        # leads
+        playManifestLeads = []
+        self.flatAddRenderedPlayManifestFromRenderItem(env, renderer, renderer, playManifestLeads, None, "")
+        playManifest["leads"] = playManifestLeads
+
+        # days with required tags
+        playDays = []
+        dayManager = env.getDayManager()
+        tagManager = env.getTagManager()
+        # iterate each day
+        for key, day in dayManager.getDayDict().items():
+            dayNumber = day.getDayNumber()
+            dayInfo = {
+                "number": dayNumber,
+                "date": day.getDate().isoformat(),
+                "timeStart": day.startTime,
+                "timeEnd": day.endTime,
+            }
+            #
+            # now iterate all tags with this day deadline
+            requiredTags = []
+            tagList = tagManager.findDeadlineTags(dayNumber)
+            tagList = tagManager.sortByTypeAndObfuscatedLabel(tagList, env, True)
+            if (len(tagList)>0):
+                for tag in tagList:
+                    # create link from day to tag for deadline
+                    tagInfo = {
+                        "id": tag.getId(),
+                        "obfuscatedLabel": tag.getNiceObfuscatedLabelWithType(True, False),
+                        "niceLabel": tag.getNiceIdWithLabel(),
+                    }
+                    requiredTags.append(tagInfo)
+            dayInfo["deadlinedTags"] = requiredTags
+            # add it
+            playDays.append(dayInfo)
+        playManifest["days"]  = playDays
+
+        # tags
+        tagInfos = {}
+        tagManager = env.getTagManager()
+        tagList = tagManager.getTagList()
+        tagList = tagManager.sortByTypeAndObfuscatedLabel(tagList, env, True)
+        for tag in tagList:
+            id = tag.getId()
+            tagInfo = {
+                #"id": tag.getId(),
+                "label": tag.getLabel(),
+                "obfuscatedLabel": tag.getNiceObfuscatedLabelWithType(True, False),
+                "deadline": tag.getDeadline()
+            }
+            gainList = tag.getGainList(True, True)
+            checkedList = tag.getCheckList(True, True)
+            tagInfo["leadsGain"] = gainList
+            tagInfo["leadsCheck"] = checkedList
+            tagInfos[id] = tagInfo
+        playManifest["tags"] = tagInfos
+
+        # checkboxes
+        checkBoxTypes = {}
+        checkboxManager = env.getCheckboxManager()
+        checkmarks = checkboxManager.getCheckmarks()
+        for key, checkmark in checkmarks.items():
+            checkmarkTypeName = checkmark.getTypeName()
+            checkmarkUses = checkmark.getUses()
+            if (len(checkmarkUses)==0):
+                pass
+            else:
+                for checkmarkUse in checkmarkUses:
+                    lead = checkmarkUse["lead"]
+                    if (lead is not None):
+                        leadref = lead.getIdPreferAutoId()
+                        markCount = checkmarkUse["count"]
+                        if (not key in checkBoxTypes):
+                            checkBoxTypes[key] = {}
+                        if (not leadref in checkBoxTypes[key]):
+                            checkBoxTypes[key][leadref] = markCount
+                        else:
+                            checkBoxTypes[key][leadref] += markCount
+        playManifest["checkboxes"] = checkBoxTypes
+
+        # game meta info
+        gameInfo = env.getEnvValueUnwrapped(None, "info", None)
+        playManifest["gameInfo"] = gameInfo
+
+        # build info
+        buildInfo = {}
+        buildInfo["buildToolVersion"] = DefCbVersion
+        buildInfo["buildToolDate"]= DefCbVersionDate
+        buildInfo["buildStr"] = env.getBuildString()
+        buildInfo["typesetStr"] = env.getTypesetString(True)
+        buildInfo["currentDate"] = jrfuncs.getCurrentDateTimeUtcInIsoFormat()
+        buildInfo["currentDateStr"] = jrfuncs.getNiceCurrentDateTime()   
+        playManifest["buildInfo"] = buildInfo
+
+        # stats
+        gameStats = renderer.calcStatsAsDict(env)
+        playManifest["stats"] = gameStats
+
+        # new, scan generated pdf for table of contents
+        pdfFilePath = self.extractPdfPathFromFileList(fileList)
+        if (pdfFilePath is not None):
+            pdfInfo = self.extractPdfInfoAndToc(env, task, pdfFilePath)
+        playManifest["pdfInfo"] = pdfInfo
+
+
+        # write file
+        outFileName = baseFilename + "_playManifest.json"
+        outFilePath = outputPath + "/" + outFileName
+        #jrfuncs.createDirIfMissing(outputPath)
+        jsonText = json.dumps(playManifest, indent=4)
+        jrfuncs.saveTxtToFile(outFilePath, jsonText, "utf-8")
+
+        return True
+
+
+    def extractPdfPathFromFileList(self, fileList):
+        for filePath in fileList:
+            if (filePath.lower().endswith(".pdf")):
+                return filePath
+        return None
+
+
+
+
+
+
+
+
+    def flatAddRenderedPlayManifestFromRenderItem(self, env, renderer, renderItem, playManifestLeads, parentItem, parentTocTitle):
+        # add this render item
+        id = renderItem.getId()
+        if (id == JrCbMainSectionName_Report):
+            # we dont add render section since this may be filled with stuff we dont want in play manifest
+            return
+        renderedInfo = renderItem.getRenderedInfo()
+        #
+        if (not renderedInfo is None) and (len(renderedInfo)>0):
+            # ADD MORE STUFF
+            #
+            # add parent TOC
+            tocSection = renderedInfo["toc"]
+            tocSection["parentTitle"] = parentTocTitle
+            playManifestLeads.append(renderedInfo)
+            if ("title" in tocSection):
+                parentTocTitle = tocSection["title"]
+            else:
+                parentToc = ""
+            # add time
+            timeDuration = renderer.calculateItemTime(env, renderItem, parentItem)
+            renderedInfo["timeDuration"] = timeDuration if (timeDuration != False) else 0
+            # continued from?
+            lead = renderItem.getInlinedFromLead()
+            if (lead is not None):
+                lead = lead.getIdPreferAutoId()
+            renderedInfo["inlinedFromLead"] = lead
+            lead = renderItem.getContinuedFromLead()
+            #if (lead is not None):
+            #    lead = lead.getIdPreferAutoId()
+            renderedInfo["continuedFromLead"] = lead
+            # role?
+            role = renderItem.getRole()
+            if (not role is None):
+                role = role.copy()
+                if ("tag" in role):
+                    tag = role["tag"]
+                    if (tag is not None):
+                        role["tag"] = role["tag"].getId()
+            renderedInfo["role"] = role
+            representsTag = renderItem.calcTagRepresentedByLead(env)
+            if (not representsTag is None):
+                representsTag = representsTag.getId()
+            renderedInfo["representsTag"] = representsTag
+            #
+        else:
+            parentToc = ""
+        # add its's children
+        childManagerChildren = renderItem.children
+        for child in childManagerChildren.children:
+            self.flatAddRenderedPlayManifestFromRenderItem(env, renderer, child, playManifestLeads, renderItem, parentTocTitle)
+
+
+
+
+
+
+    def extractPdfInfoAndToc(self, env, task, pdfFilePath):
+        pdfInfo = {}
+
+        # parth to file
+        pdfFileName = os.path.basename(pdfFilePath)
+        pdfInfo["pdfFileName"] = pdfFileName
+
+        # url -- this isnt really helpful since it links to the DRAFT build instead of the published build..
+        absoluteUrlBase = task.getOption("absoluteUrlBase",None)
+        url = absoluteUrlBase + "/" + pdfFileName
+        pdfInfo["pdfUrl"] = url
+        
+
+        # use pypdf2 to grab table of contents (bookmarks) with page numbers
+        from PyPDF2 import PdfReader, PdfWriter
+
+        # helper function from chatgpt
+        def get_pdf_table_of_contents(reader):
+            outlines = reader.outline
+            toc = []
+            def process_outlines(outlines, level=0):
+                for item in outlines:
+                    if isinstance(item, list):
+                        # Recursively process nested outlines
+                        process_outlines(item, level + 1)
+                    else:
+                        title = item.title if hasattr(item, 'title') else str(item)
+                        try:
+                            page_number = reader.get_destination_page_number(item) + 1  # Pages are zero-indexed
+                        except Exception:
+                            page_number = None
+                        toc.append({"title": title,
+                                    "pageNumber": page_number,
+                                    "level": level
+                                    })
+
+            process_outlines(outlines)
+            return toc
+
+        # open read
+        reader = PdfReader(pdfFilePath)
+
+        # total page count
+        pdfInfo["pageCount"] = len(reader.pages)
+        pdfInfo["metadata"] = reader.metadata
+        #pdfInfo["xmp_metadata"] = reader.xmp_metadata
+
+        # get toc
+        toc_items = get_pdf_table_of_contents(reader)
+        pdfInfo["toc"] = toc_items
+
+        return pdfInfo

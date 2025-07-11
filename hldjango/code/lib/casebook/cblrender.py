@@ -177,8 +177,6 @@ class CblRenderDoc(CbRenderDoc):
 
 
     def convertMarkdownOrVouchedTextToLatex(self, text, flagProtectStartingSpace, flagConvertNewlinesToLatexSpecialNewline):
-        if ("ATTN FUCK OFF" in text):
-            jrprint("DEBUG BREAK")
         if (isTextLatexVouched(text)):
             # do NOT markdown strings that are vouched latex
             latexText = removeLatexVouch(text)
@@ -660,6 +658,7 @@ class CblRenderDoc(CbRenderDoc):
         entry = item.getEntry()
 
         # for debug stuff
+        origToc = toc
         reportMode = env.getReportMode()
         if (reportMode):
             subheading = None
@@ -726,6 +725,9 @@ class CblRenderDoc(CbRenderDoc):
 
         isLead = isinstance(item, CbRenderLead)
 
+        tocPrefix = None
+        tocLevel = None
+
 
         # TOC and title lines
         showingTitle = False
@@ -747,7 +749,9 @@ class CblRenderDoc(CbRenderDoc):
                 if (toc is not None) and (toc!=""):
                     if (not hasTitle):
                         ltext += "\\phantomsection\n"
-                    ltext += r"\addcontentsline{toc}{chapter}{~~" + tocLatex + "}\n"
+                    tocPrefix = "~~"
+                    tocLevel = "chapter"
+                    ltext += r"\addcontentsline{toc}{" + tocLevel + "}{" + tocPrefix + tocLatex + "}\n"
             elif (level==2):
                 if (hasTitle):
                     headingCompactText += titleLatex
@@ -756,23 +760,27 @@ class CblRenderDoc(CbRenderDoc):
                 if (toc is not None) and (toc!=""):
                     if (not hasTitle):
                         ltext += "\\phantomsection\n"
-                    if (tocLatex=="") or (toc==""):
-                        jrprint("ATTN: DEBUG BREAK")
-                    ltext += r"\addcontentsline{toc}{section}{~~" + tocLatex + "}\n"
+                    tocPrefix = "~~"
+                    tocLevel = "section"
+                    ltext += r"\addcontentsline{toc}{" + tocLevel + "}{" + tocPrefix + tocLatex + "}\n"
             elif (level==3) and (optionMaxLevel>=3):
                 if (hasTitle):
                     ltext += "\n" + self.wrapInKomaSectionModifierIfNeeded("subsection", komaHeaderModifier, "\\subsection*{{{}}}%\n\n".format(titleLatex))
                 if (toc is not None) and (toc!=""):
                     if (not hasTitle):
                         ltext += "\\phantomsection\n"
-                    ltext += r"\addcontentsline{toc}{subsection}{~~" + tocLatex + "}\n"
+                    tocPrefix = "~~"
+                    tocLevel = "subsection"
+                    ltext += r"\addcontentsline{toc}{" + tocLevel + "}{" + tocPrefix + tocLatex + "}\n"
             elif (level==4) and (isLead):
                 if (hasTitle):
                     ltext += "\n" + self.wrapInKomaSectionModifierIfNeeded("subsection", komaHeaderModifier, "\\subsection*{{{}}}%\n\n".format(titleLatex))
                 if (toc is not None) and (toc!=""):
                     if (not hasTitle):
                         ltext += "\\phantomsection\n"
-                    ltext += r"\addcontentsline{toc}{subsection}{~~~" + tocLatex + "}\n"
+                    tocPrefix = "~~~"
+                    tocLevel = "subsection"
+                    ltext += r"\addcontentsline{toc}{" + tocLevel + "}{" + tocPrefix + tocLatex + "}\n"
             else:
                 # higher level toc headings just get shown bold
                 if (hasTitle):
@@ -794,7 +802,6 @@ class CblRenderDoc(CbRenderDoc):
             # build latex
             allLatexText += ltext
 
-
         # subheading
         subheading = item.getSubHeading()
         if (subheading is not None) and (subheading!=""):
@@ -805,6 +812,10 @@ class CblRenderDoc(CbRenderDoc):
                 subheadingLatex = convertEscapeUnsafePlainTextToLatex(subheading)
         else:
             subheadingLatex = ""
+
+
+        # save for manifest output
+        item.renderedInfo["toc"] = {"title": origToc, "tocLevel": tocLevel, "subheading": subheading}
 
 
         # add inlinedFromLead info to subheading
@@ -838,7 +849,7 @@ class CblRenderDoc(CbRenderDoc):
         tagManager = env.getTagManager()
         tag = tagManager.findTagById(itemId)
         if (tag is not None) and (tag.getIsTagTypeDoc()):
-            gainList = tag.getGainList(True)
+            gainList = tag.getGainList(True, False)
             if (len(gainList)==1):
                 # we can only do this if there is one and only one place where this doc is gained
                 gainedLead = gainList[0]
@@ -1426,19 +1437,28 @@ class CblRenderDoc(CbRenderDoc):
             raise makeJriException("Font with that id ({}) has already been defined (use defineFont with ignoreDupe=true to bypass error).".format(id), astloc)
         #
         safeId = convertIdToSafeLatexId(id)
-
-        # find the known font reject if not known
-        [fontPath, warningText] = env.locateManagerFileWithUseNote(env.calcManagerIdListFont(), path, "Font", "font", None, env, astloc, False)
-    
-        # split off filename from path
-        [dirPath, fileName] = jrfuncs.splitFilePathToPathAndFile(fontPath)
-
-        # path needs to end in /
-        safePath = makeLatexSafeFilePath(dirPath)
-        safeFontName = fileName
         fontCommand = "\\cbFont" + safeId
+        
+        if (path=="default"):
+            # based on default font
+            flagUseDefaultFont = True
+            features = {}
+        else:
+            # custom font
+            flagUseDefaultFont = False
+            # find the known font reject if not known
+            [fontPath, warningText] = env.locateManagerFileWithUseNote(env.calcManagerIdListFont(), path, "Font", "font", None, env, astloc, False)
+        
+            # split off filename from path
+            [dirPath, fileName] = jrfuncs.splitFilePathToPathAndFile(fontPath)
+
+            # path needs to end in /
+            safePath = makeLatexSafeFilePath(dirPath)
+            safeFontName = fileName
+            #
+            features = {"Path": safePath}
+
         #
-        features = {"Path": safePath}
 
         if (monoSpace):
             # some of these are overridden below by other options
@@ -1454,7 +1474,10 @@ class CblRenderDoc(CbRenderDoc):
             features["Color"] = convertEscapeUnsafePlainTextToLatex(color)
 
         #
-        latex = "\\newfontfamily{" + fontCommand + "}{" + safeFontName + "}[" + jrfuncs.dictToCommaString(features) + "]\n"
+        if (flagUseDefaultFont):
+            latex = "\\newcommand{" + fontCommand + "}{" + "\\addfontfeatures{" + jrfuncs.dictToCommaString(features) + "}}\n"
+        else:
+            latex = "\\newfontfamily{" + fontCommand + "}{" + safeFontName + "}[" + jrfuncs.dictToCommaString(features) + "]\n"
         self.addToPreambleLatex(latex)
         self.fontDictionary[id] = {"command": fontCommand, "size": size, "scale": scale, "color": color, "hyphenate": hyphenate, "monoSpace": monoSpace}
 

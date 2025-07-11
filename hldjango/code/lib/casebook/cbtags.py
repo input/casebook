@@ -711,14 +711,18 @@ class CbTagItem:
         self.logicLeads.append(useDict)
 
 
-    def getGainList(self, flagRemoveDuplicates):
+    def getGainList(self, flagRemoveDuplicates, flagLeadsAsIds):
         leadList = self.gainLeads
+        if (flagLeadsAsIds):
+            self.convertLeadListToLeadRefIdList(leadList)
         if (not flagRemoveDuplicates):
             return leadList
         return self.uniqueLeadList(leadList)
 
-    def getCheckList(self, flagRemoveDuplicates):
+    def getCheckList(self, flagRemoveDuplicates, flagLeadsAsIds):
         leadList = self.checkLeads
+        if (flagLeadsAsIds):
+            self.convertLeadListToLeadRefIdList(leadList)
         if (not flagRemoveDuplicates):
             return leadList
         return self.uniqueLeadList(leadList)
@@ -728,6 +732,12 @@ class CbTagItem:
         if (not flagRemoveDuplicates):
             return leadList
         return self.uniqueLeadList(leadList)
+
+    def convertLeadListToLeadRefIdList(self, leadList):
+        # change it in place
+        for item in leadList:
+            item["lead"] = item["lead"].getIdPreferAutoId()
+
 
     def uniqueLeadList(self, leadList):
         seen = set()

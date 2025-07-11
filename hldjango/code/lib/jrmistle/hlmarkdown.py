@@ -38,10 +38,6 @@ class HlMarkdown:
         origText = text
         extras = {}
 
-        if ("ATTN FUCK OFF" in text):
-            print("DEBUG BREAK")
-
-
         if (self.options['forceLinebreaks']):
             text = text.replace('\n','\n\n')
 

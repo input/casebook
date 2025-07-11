@@ -18,6 +18,12 @@
         {% if not buildError %}
             <div>No files.</div>
         {% endif %}
+    {% else %}
+
+        {% if "dontShare" in options %}
+            <div class="textWarn">NOTE: Do not share these files as they are not stable; only shared published files.</div>
+        {% endif %}
+
     {% endif %}
 
 </ul>

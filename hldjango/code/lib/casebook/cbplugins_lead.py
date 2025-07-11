@@ -136,6 +136,16 @@ class CbPluginNyNoir(CbPlugin):
 
 
 
+    # ---------------------------------------------------------------------------
+    # for New York Noir, here is the lead ranges for unused leads
+    def generatePotentialUnusedLeadNumericRange(self, fullUnusedLeadList):
+        return [11000, 89999]
+
+    def generatePotentialUnusedLeadFromIdAsNumber(self, leadIdAsNumber, fullUnusedLeadList):
+        lstring = str(leadIdAsNumber)
+        leadId = "{}-{}".format(lstring[0], lstring[1:])
+        return leadId
+    # ---------------------------------------------------------------------------
 
 
 
@@ -281,21 +291,21 @@ class CbPluginDocs(CbPlugin):
         if (subheading=="" or subheading is None):
             # warn no label
             if (flagStageProcess):
-                env.addNote(JrINote("warning", lead, "Document has no label or subheading, either in document entry or in tag definition via defineTag()", None, None))
+                env.addNote(JrINote("warning", 1, lead, "Document has no label or subheading, either in document entry or in tag definition via defineTag()", None, None))
         elif (subheadingTag!="" and subheadingTag is not None) and (subheadingOriginalLabel!="" and subheadingOriginalLabel is not None):
             # both specified
             if (subheadingTag!=subheadingOriginalLabel):
                 # warn that they differ and tell author we are using subheadingOriginalLabel
                 if (flagStageProcess):
-                    env.addNote(JrINote("warning", lead, "Mismatch in document entry label and tag definition label using defineTag(), defaulting to using the label specfied on the document and ignoring that specified in defineTag()", None, None))
+                    env.addNote(JrINote("warning", 1, lead, "Mismatch in document entry label and tag definition label using defineTag(), defaulting to using the label specfied on the document and ignoring that specified in defineTag()", None, None))
             else:
                 # warn author that they dont need to specify both
                 if (flagStageProcess):
-                    env.addNote(JrINote("warning", lead, "Document entry has a label and document tag definition has same label specified again; you only need to put the label in the defineTag() definition and it will be shown on the document page automatically.", None, None))
+                    env.addNote(JrINote("warning", 2, lead, "Document entry has a label and document tag definition has same label specified again; you only need to put the label in the defineTag() definition and it will be shown on the document page automatically.", None, None))
         elif (subheadingTag=="" or subheadingTag is None) and (subheadingOriginalLabel!="" and subheadingOriginalLabel is not None):
             # warn them that we prefer them put the label in the tag rather than the document
             if (flagStageProcess):
-                env.addNote(JrINote("warning", lead, "You have specified the label for the document in the document entry; this is ok, but it might (im not sure yet) be better to instead specify it when defining the tag with defineTag().", None, None))       
+                env.addNote(JrINote("warning", 2, lead, "You have specified the label for the document in the document entry; this is ok, but it might (im not sure yet) be better to instead specify it when defining the tag with defineTag().", None, None))       
 
         lead.setToc(labelToc)
         #
@@ -452,7 +462,17 @@ class CbPluginClassicLead(CbPlugin):
         parentSection.setSortMethodAlphaNumeric()
 
 
+    # ---------------------------------------------------------------------------
+    # these are called by hlapi when we need to generate unused leads
+    # the reason we go to this trouble is to try to preserve consistency between builds of the unused of dynamically generated lead ids
+    def generatePotentialUnusedLeadNumericRange(self, fullUnusedLeadList):
+        leadRange = [0, len(fullUnusedLeadList)-1]
+        return leadRange
 
+    def generatePotentialUnusedLeadFromIdAsNumber(self, leadIdAsNumber, fullUnusedLeadList):
+        leadId = fullUnusedLeadList[leadIdAsNumber]
+        return leadId
+    # ---------------------------------------------------------------------------
 
 
 

@@ -30,6 +30,8 @@ class JrInterpreter:
         #
         self.notes = []
         #
+        self.reportRequests = []
+        #
         # Context and Environment
         self.environment = JrCbEnvironment(self, None)
         #
@@ -96,7 +98,9 @@ class JrInterpreter:
     def getNotesFiltered(self, filterLead, typeFilter):
         if (not isinstance(typeFilter, list)):
             typeFilter = [typeFilter]
-        filteredNoteList = []
+        #filteredNoteList = []
+        noteCount = 0
+        filteredNoteDict = {"notesDict": {}, "notesList": []}
         for tfilter in typeFilter:
             for note in self.notes:
                 if (filterLead is not None):
@@ -104,8 +108,40 @@ class JrInterpreter:
                         continue
                 if (tfilter is not None) and (tfilter != note.typeStr):
                     continue
-                filteredNoteList.append(note)
-        return filteredNoteList
+                sortSection = note.getSortSection()
+                if (sortSection is None):
+                    sortSection = ""
+                if (not sortSection in filteredNoteDict["notesDict"]):
+                    filteredNoteDict["notesDict"][sortSection] = []
+                    filteredNoteDict["notesDict"][sortSection].append(note)
+                else:
+                    filteredNoteDict["notesList"].append(note)
+                noteCount += 1
+        filteredNoteDict["count"] = noteCount
+        filteredNoteDict["notesDict"] = jrfuncs.sortDictByKeys(filteredNoteDict["notesDict"])
+        return filteredNoteDict
+
+
+    def addReportRequest(self, req):
+        # dont readd it twice
+        reqDict = req.getDict()
+        for r in self.reportRequests:
+            if (r.getDict()==reqDict):
+                return
+        self.reportRequests.append(req)
+    def getReportRequests(self):
+        self.reportRequests
+    def getFilteredReportRequests(self, filter):
+        filteredDict = {"reqs": []}
+        count = 0
+        for tfilter in filter:
+            for r in self.reportRequests:
+                if (r.getType() != tfilter):
+                    continue
+                filteredDict["reqs"].append(r)
+            count += 1
+        filteredDict["count"] = count
+        return filteredDict
 
 
     def getEhelper(self):

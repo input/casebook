@@ -227,8 +227,9 @@ class QuoteBalance:
 
 class JrINote:
     # for keeping track of WARNINGS and miscelaneous occurences that might be included in a report
-    def __init__(self, typeStr, lead, msg, msgLatex, extras):
+    def __init__(self, typeStr, sortSection, lead, msg, msgLatex, extras):
         self.typeStr = typeStr
+        self.sortSection = sortSection
         self.lead = lead
         self.msg = msg
         self.msgLatex = msgLatex
@@ -243,5 +244,18 @@ class JrINote:
         return self.extras
     def getTypeStr(self):
         return self.typeStr
+    def getSortSection(self):
+        return self.sortSection
 
+
+
+
+class JrIRequest:
+    # for keeping track of WARNINGS and miscelaneous occurences that might be included in a report
+    def __init__(self, theDict):
+        self.theDict = theDict
+    def getDict(self):
+        return self.theDict
+    def getType(self):
+        return self.theDict["type"]
 

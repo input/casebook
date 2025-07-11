@@ -16,7 +16,7 @@ import math
 import traceback
 import glob
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 
@@ -1382,6 +1382,13 @@ def escapedCharacterConvert(charc):
 
 
 # ---------------------------------------------------------------------------   
+def getCurrentDateTimeInIsoFormat():
+    return datetime.now().isoformat()
+
+def getCurrentDateTimeUtcInIsoFormat():
+    now = datetime.now(timezone.utc)
+    return now.isoformat()
+
 def getNiceCurrentDateTime():
     return getNiceDateTime(datetime.now())
 
@@ -1755,10 +1762,6 @@ def modifyTextToSuitTextPositionStyle(text, textPositionStyle, linestartPrefix, 
     if (len(text)==0):
         return text
     #
-
-    if (text.startswith("if")):
-        jrprint("ATTN: DEBUG BREAK")
-
     c = text[0]
     c2 = text[1] if (len(text)>1) else '.'
     #

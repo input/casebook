@@ -32,7 +32,9 @@ def generateAllAuthorReports(renderDoc, env, targetSection):
     generateAddReportQuotesInLeads(renderDoc, env, targetSection)
     #
     generateAddReportAuthorNotes(renderDoc, env, targetSection)
-    generateAddReportLeadDatabaseDiscrepencies(renderDoc, env, targetSection)
+    generateAddReportLeadDatabaseWarnings(renderDoc, env, targetSection)
+    #
+    generateAddReportsRequested(renderDoc, env, targetSection)
     #
     generateAddReportEmbeddedImages(renderDoc, env, targetSection)
     generateAddReportUnusedImages(renderDoc, env, targetSection)
@@ -172,8 +174,8 @@ def generateAddReportTagUsage(renderDoc, env, targetSection):
             results.flatAdd("\n")
             results.flatAdd("#### {} ({}):\n".format(tagTextIdLabel, tagTextObfuscated))
             # now usages
-            addTagUseList(renderDoc, results, tag, "Gained", tag.getGainList(False))
-            addTagUseList(renderDoc, results, tag, "Checked", tag.getCheckList(False))
+            addTagUseList(renderDoc, results, tag, "Gained", tag.getGainList(False, False))
+            addTagUseList(renderDoc, results, tag, "Checked", tag.getCheckList(False, False))
             addTagUseList(renderDoc, results, tag, "Logic", tag.getLogicList(False))
             # deadline
             deadlineDay = tag.getDeadline()
@@ -199,7 +201,7 @@ def generateAddReportTagUsage(renderDoc, env, targetSection):
                 results.flatAdd(vouchForLatexString("{\\color{red} WARNING: This tag has a deadline but no hint (!)}\n",True))
                 results.flatAdd("\n")
                 # add general warning
-                env.addNote(JrINote("warning", None, "Tag '{}' ({}) has deadline but no hint".format(tagTextIdLabel, tagTextObfuscated), None, None))
+                env.addNote(JrINote("warning", 1, None, "Tag '{}' ({}) has deadline but no hint".format(tagTextIdLabel, tagTextObfuscated), None, None))
 
 
     # set text
@@ -350,30 +352,41 @@ def generateAddReportFilteredNotes(renderDoc, env, targetSection, reportTitle, t
     results.flatAdd(introText + "\n")
 
     filteredNotes = env.getInterp().getNotesFiltered(None, typeFilter)
-    filteredNotesCount = len(filteredNotes)
+    filteredNotesCount = filteredNotes["count"]
     if (filteredNotesCount==0):
         results.flatAdd("{} {}s.\n".format(filteredNotesCount, itemLabel))
     else:
         results.flatAdd("{} {}{}:\n".format(filteredNotesCount, itemLabel, jrfuncs.plurals(filteredNotesCount,"s")))
-        #results.flatAdd(vouchForLatexString("\\begin{sloppypar}\n", False))
-    for note in filteredNotes:
-        results.flatAdd(" * ")
-        latexLineText = note.getMessageAsLatex()
-        if (latexLineText is not None):
-            results.flatAdd(vouchForLatexString(latexLineText, True))
-        else:
-            plainLineText = note.getMessage()
-            results.flatAdd(plainLineText)
-        #
-        leadref = note.getLead()
-        if (leadref is not None):
-            leadLinkLatex = makeLatexReferenceToLead(leadref, "report", True)
-            results.flatAdd(": ")
-            results.flatAdd(leadLinkLatex)
-        results.flatAdd(".\n")
-    if (filteredNotesCount>0):
-        #results.flatAdd(vouchForLatexString("\\end{sloppypar}\n", False))
-        pass
+
+    lastSortSection = ""
+    for k,v in filteredNotes["notesDict"].items():
+        for note in v:
+            # sort notes into SECTIONS
+            if (note.getSortSection() != lastSortSection):
+                results.flatAdd("\n")
+                results.flatAdd("\n")
+                if isinstance(k, int):
+                    sectionLabel = "Priority {}".format(k)
+                else:
+                    sectionLabel = k
+                results.flatAdd("**{}:**\n".format(sectionLabel))
+                results.flatAdd("\n")
+                lastSortSection = k
+
+            results.flatAdd(" * ")
+            latexLineText = note.getMessageAsLatex()
+            if (latexLineText is not None):
+                results.flatAdd(vouchForLatexString(latexLineText, True))
+            else:
+                plainLineText = note.getMessage()
+                results.flatAdd(plainLineText)
+            #
+            leadref = note.getLead()
+            if (leadref is not None):
+                leadLinkLatex = makeLatexReferenceToLead(leadref, "report", True)
+                results.flatAdd(": ")
+                results.flatAdd(leadLinkLatex)
+            results.flatAdd(".\n")
 
     # set text
     results.flatAdd("\n\n")
@@ -398,8 +411,9 @@ def generateAddReportIncludedSource(renderDoc, env, targetSection):
 def generateAddReportAuthorNotes(renderDoc, env, targetSection):
     generateAddReportFilteredNotes(renderDoc, env, targetSection, "Author Notes Report", "authorNote", "Author note", "The following is a report of all author notes in this case book.")
 
-def generateAddReportLeadDatabaseDiscrepencies(renderDoc, env, targetSection):
+def generateAddReportLeadDatabaseWarnings(renderDoc, env, targetSection):
     generateAddReportFilteredNotes(renderDoc, env, targetSection, "Lead Database Report", "leadDbWarning", "Lead Db Warning", "The following is a report of all potential lead database warnings.")
+
 
 
 
@@ -533,7 +547,7 @@ def generateAddReportQuotesInLeads(renderDoc, env, targetSection):
         messages = quoteBalance.getProblemList()
         if (len(messages)>0):
             # add general warning
-            env.addNote(JrINote("warning", leadref, "Quote problem in lead (see quote report)", None, None))
+            env.addNote(JrINote("warning", 2, leadref, "Quote problem in lead (see quote report)", None, None))
             #
             leadLinkLatex = makeLatexReferenceToLead(leadref, "report", True)
             results.flatAdd(leadLinkLatex)
@@ -703,8 +717,8 @@ def generateLeadReportExtras(renderDoc, env, targetSection):
             # IF this is a TAG related lead (document or hint), then add list of gain/check locations, just as if this was a tag report
             if (tag is not None):
                 # usages
-                addTagUseList(renderDoc, results, tag, "Gained", tag.getGainList(False))
-                addTagUseList(renderDoc, results, tag, "Checked", tag.getCheckList(False))
+                addTagUseList(renderDoc, results, tag, "Gained", tag.getGainList(False, False))
+                addTagUseList(renderDoc, results, tag, "Checked", tag.getCheckList(False, False))
                 deadlineDay = tag.getDeadline()
                 #if WE are not a hint, show HINTS to us
                 if (roleType != "hint"):
@@ -799,7 +813,7 @@ def generateAddReportEmbeddedImages(renderDoc, env, targetSection):
     results.flatAdd("The following is a report of all image files used by this case book." + "\n")
 
     filteredNotes = env.getInterp().getNotesFiltered(None, typeFilter)
-    filteredNotesCount = len(filteredNotes)
+    filteredNotesCount = filteredNotes["count"]
     if (filteredNotesCount==0):
         results.flatAdd("{} {}s.\n".format(filteredNotesCount, itemLabel))
     else:
@@ -813,7 +827,7 @@ def generateAddReportEmbeddedImages(renderDoc, env, targetSection):
     optionLongTable = True
     optionCalcImageSize = False
 
-    if (len(filteredNotes)>0):
+    if (filteredNotesCount>0):
         #
         if (optionLongTable):
             # latex is evil
@@ -821,47 +835,48 @@ def generateAddReportEmbeddedImages(renderDoc, env, targetSection):
             results.flatAdd(vouchForLatexString(latex, False))
 
         # one table for each (we could put them all in one big table with many rows but not sure what the benefit is)
-        for note in filteredNotes:
-            # make like a row with embedded image and text
-            extras = note.getExtras()
+        for k,v in filteredNotes["notesDict"].items():
+            for note in v:
+                # make like a row with embedded image and text
+                extras = note.getExtras()
 
-            # get components
-            imageFullPath = jrfuncs.getDictValue(extras, "filePath")
-            if (imageFullPath is None):
-                msg = "CASEBOOK ERROR: IMAGE FILE MISSING, OPTIONS CONFIGURED TO SHOW WARNING: "
-                imageLatex = msg + convertEscapeUnsafePlainTextToLatex(str(extras))
-                imageLatex += "\n\n"
-            else:
-                caption = None
-                optionWrapText = False
-                imageLatex = generateImageEmbedLatex(env, imageFullPath, widthStr, heightStr, borderWidth, padding, "left", "t", caption, None, None, False, optionWrapText)
-            #
-            labelLatex = note.getMessageAsLatex()
+                # get components
+                imageFullPath = jrfuncs.getDictValue(extras, "filePath")
+                if (imageFullPath is None):
+                    msg = "CASEBOOK ERROR: IMAGE FILE MISSING, OPTIONS CONFIGURED TO SHOW WARNING: "
+                    imageLatex = msg + convertEscapeUnsafePlainTextToLatex(str(extras))
+                    imageLatex += "\n\n"
+                else:
+                    caption = None
+                    optionWrapText = False
+                    imageLatex = generateImageEmbedLatex(env, imageFullPath, widthStr, heightStr, borderWidth, padding, "left", "t", caption, None, None, False, optionWrapText)
+                #
+                labelLatex = note.getMessageAsLatex()
 
-            if (optionCalcImageSize) and (imageFullPath is not None):
-                labelLatex += " (" + generateImageSizeLatex(imageFullPath) + ")"
+                if (optionCalcImageSize) and (imageFullPath is not None):
+                    labelLatex += " (" + generateImageSizeLatex(imageFullPath) + ")"
 
-            #
-            leadref = note.getLead()
-            if (leadref is not None):
-                leadLinkLatex = makeLatexReferenceToLead(leadref, "report", False)
-            else:
-                leadLinkLatex = "(used location unknown)"
+                #
+                leadref = note.getLead()
+                if (leadref is not None):
+                    leadLinkLatex = makeLatexReferenceToLead(leadref, "report", False)
+                else:
+                    leadLinkLatex = "(used location unknown)"
 
-            # wrap in tabular orientation
-            latex = ""
-            if (not optionLongTable):
-                latex += r"\begin{tblr}{l X}" + "\n"
+                # wrap in tabular orientation
+                latex = ""
+                if (not optionLongTable):
+                    latex += r"\begin{tblr}{l X}" + "\n"
+                
+                latex += "{" + imageLatex + "} & {" + labelLatex + " at " + leadLinkLatex + "}\n"
+
+                if (not optionLongTable):
+                    latex += r"\end{tblr}" + "\n\n"
+                else:
+                    latex += r" \\" + "\n"
             
-            latex += "{" + imageLatex + "} & {" + labelLatex + " at " + leadLinkLatex + "}\n"
-
-            if (not optionLongTable):
-                latex += r"\end{tblr}" + "\n\n"
-            else:
-                latex += r" \\" + "\n"
-        
-            # add the latex
-            results.flatAdd(vouchForLatexString(latex, False))
+                # add the latex
+                results.flatAdd(vouchForLatexString(latex, False))
 
         if (optionLongTable):
             latex = r"\end{longtblr}" + "\n\n"
@@ -1093,7 +1108,7 @@ def findSubWalkthroughsToTag(env, tag, visitedLeads):
     tagManager = env.getTagManager()
 
     # start with gain list
-    gainList = tag.getGainList(True)
+    gainList = tag.getGainList(True, False)
     for g in gainList:
         if ("lead" not in g):
             continue
@@ -1275,7 +1290,7 @@ def generateAddReportFingerprints(renderDoc, env, targetSection):
     results.flatAdd("The following is a report of all image files used by this case book." + "\n")
 
     filteredNotes = env.getInterp().getNotesFiltered(None, typeFilter)
-    filteredNotesCount = len(filteredNotes)
+    filteredNotesCount = filteredNotes["count"]
     if (filteredNotesCount==0):
         results.flatAdd("{} {}s.\n".format(filteredNotesCount, itemLabel))
     else:
@@ -1289,7 +1304,7 @@ def generateAddReportFingerprints(renderDoc, env, targetSection):
     optionLongTable = True
     optionCalcImageSize = False
 
-    if (len(filteredNotes)>0):
+    if (filteredNotesCount>0):
         #
         if (optionLongTable):
             # latex is evil
@@ -1298,93 +1313,95 @@ def generateAddReportFingerprints(renderDoc, env, targetSection):
 
         doneList = []
 
-        # SORT filtered notes by type and id
-        filteredNotes.sort(key = lambda x: sortKeyFuncNotesForFingerprintReport(x))
+        for k,v in filteredNotes["notesDict"].items():
+            noteList = v
+            # SORT filtered notes by type and id
+            noteList.sort(key = lambda x: sortKeyFuncNotesForFingerprintReport(x))
+            # one table for each (we could put them all in one big table with many rows but not sure what the benefit is)
+            for note in noteList:
 
-        # one table for each (we could put them all in one big table with many rows but not sure what the benefit is)
-        for note in filteredNotes:
-            # make like a row with embedded image and text
-            extras = note.getExtras()
+                # make like a row with embedded image and text
+                extras = note.getExtras()
 
-            # get components
-            imageLatex = "n/a"
-            caption = jrfuncs.getDictValueOrDefault(extras,"caption", None)
-            imageFullPath = jrfuncs.getDictValueOrDefault(extras, "filePath", None)
-            fpLead = jrfuncs.getDictValueOrDefault(extras, "fpLead", "n/a")
-            fpFinger = jrfuncs.getDictValueOrDefault(extras, "fpFinger", "n/a")
-            typeStr = note.getTypeStr()
-
-            doneId = calcFpDoneId(typeStr, fpLead, fpFinger)
-            if (doneId in doneList):
-                # already done
-                continue
-            else:
-                doneList.append(doneId)
-
-            #
-            if (imageFullPath is None):
-                if (caption is not None):
-                    imageLatex = caption
-            else:
+                # get components
+                imageLatex = "n/a"
                 caption = jrfuncs.getDictValueOrDefault(extras,"caption", None)
-                optionWrapText = False
-                imageLatex = generateImageEmbedLatex(env, imageFullPath, widthStr, heightStr, borderWidth, padding, "left", "t", caption, None, None, False, optionWrapText)
-            #
-            if (typeStr == "fingerPrintSet"):
-                labelLatex = "[ SET ID {} ]".format(fpLead)
-            else:
-                labelLatex = "[ ID {} / {} ]".format(fpLead, fpFinger)
+                imageFullPath = jrfuncs.getDictValueOrDefault(extras, "filePath", None)
+                fpLead = jrfuncs.getDictValueOrDefault(extras, "fpLead", "n/a")
+                fpFinger = jrfuncs.getDictValueOrDefault(extras, "fpFinger", "n/a")
+                typeStr = note.getTypeStr()
 
-            labelLatex += " " + typeStr + ": " + note.getMessageAsLatex()
-
-            if (optionCalcImageSize) and (imageFullPath is not None):
-                labelLatex += " (" + generateImageSizeLatex(imageFullPath) + ")"
-
-
-            # new, we are going to collect ALL fingerprint refs in one place
-            leadList = calcAllFpLeadRefs(filteredNotes, doneId)
-            leadLinkLatex = ""
-            for leadref in leadList:
-                if (leadLinkLatex!=""):
-                    leadLinkLatex += r" \par "
-                if (leadref is not None):
-                    leadLinkLatex += makeLatexReferenceToLead(leadref, "report", False)
+                doneId = calcFpDoneId(typeStr, fpLead, fpFinger)
+                if (doneId in doneList):
+                    # already done
+                    continue
                 else:
-                    leadLinkLatex += "[n/a lead]"
+                    doneList.append(doneId)
 
-            if (True):
-                # add info about whether there is a lead for this id
-                fpLeadLatex = ""
-                leadRef = renderDoc.findLeadByIdPath(fpLead, None)
-                if (leadRef is None):
-                    fpLeadLatex = r"{\color{red} WARNING: There is no lead for this fingerprint set!}"
+                #
+                if (imageFullPath is None):
+                    if (caption is not None):
+                        imageLatex = caption
                 else:
-                    leadRefLinkLatex = makeLatexReferenceToLead(leadRef, "report", False)
-                    fpLeadLatex = "INFO LEAD: " + leadRefLinkLatex
-                leadLinkLatex += r"\par " + fpLeadLatex + r"\par"
+                    caption = jrfuncs.getDictValueOrDefault(extras,"caption", None)
+                    optionWrapText = False
+                    imageLatex = generateImageEmbedLatex(env, imageFullPath, widthStr, heightStr, borderWidth, padding, "left", "t", caption, None, None, False, optionWrapText)
+                #
+                if (typeStr == "fingerPrintSet"):
+                    labelLatex = "[ SET ID {} ]".format(fpLead)
+                else:
+                    labelLatex = "[ ID {} / {} ]".format(fpLead, fpFinger)
 
-            if (True):
-                variableList = env.getVariablesWithValue(fpLead)
-                if (len(variableList)>0):
-                    variableListStr = ", ".join(variableList.keys())
-                    leadLinkLatex += r"\par Variables matching fingerprint lead id: " + variableListStr + r"\par"
+                labelLatex += " " + typeStr + ": " + note.getMessageAsLatex()
 
-            # wrap in tabular orientation
-            latex = ""
-            if (not optionLongTable):
-                latex += r"\begin{tblr}{l X}" + "\n"
+                if (optionCalcImageSize) and (imageFullPath is not None):
+                    labelLatex += " (" + generateImageSizeLatex(imageFullPath) + ")"
+
+
+                # new, we are going to collect ALL fingerprint refs in one place
+                leadList = calcAllFpLeadRefs(noteList, doneId)
+                leadLinkLatex = ""
+                for leadref in leadList:
+                    if (leadLinkLatex!=""):
+                        leadLinkLatex += r" \par "
+                    if (leadref is not None):
+                        leadLinkLatex += makeLatexReferenceToLead(leadref, "report", False)
+                    else:
+                        leadLinkLatex += "[n/a lead]"
+
+                if (True):
+                    # add info about whether there is a lead for this id
+                    fpLeadLatex = ""
+                    leadRef = renderDoc.findLeadByIdPath(fpLead, None)
+                    if (leadRef is None):
+                        fpLeadLatex = r"{\color{red} WARNING: There is no lead for this fingerprint set!}"
+                    else:
+                        leadRefLinkLatex = makeLatexReferenceToLead(leadRef, "report", False)
+                        fpLeadLatex = "INFO LEAD: " + leadRefLinkLatex
+                    leadLinkLatex += r"\par " + fpLeadLatex + r"\par"
+
+                if (True):
+                    variableList = env.getVariablesWithValue(fpLead)
+                    if (len(variableList)>0):
+                        variableListStr = ", ".join(variableList.keys())
+                        leadLinkLatex += r"\par Variables matching fingerprint lead id: " + variableListStr + r"\par"
+
+                # wrap in tabular orientation
+                latex = ""
+                if (not optionLongTable):
+                    latex += r"\begin{tblr}{l X}" + "\n"
+                
+
+                latex += "{" + imageLatex + "} & {" + labelLatex + r":\par " + leadLinkLatex + "}\n"
+                #latex += "{" + imageLatex + "} & {" + labelLatex + "} & {" + leadLinkLatex + "}\n"
+
+                if (not optionLongTable):
+                    latex += r"\end{tblr}" + "\n\n"
+                else:
+                    latex += r" \\" + "\n"
             
-
-            latex += "{" + imageLatex + "} & {" + labelLatex + r":\par " + leadLinkLatex + "}\n"
-            #latex += "{" + imageLatex + "} & {" + labelLatex + "} & {" + leadLinkLatex + "}\n"
-
-            if (not optionLongTable):
-                latex += r"\end{tblr}" + "\n\n"
-            else:
-                latex += r" \\" + "\n"
-        
-            # add the latex
-            results.flatAdd(vouchForLatexString(latex, False))
+                # add the latex
+                results.flatAdd(vouchForLatexString(latex, False))
 
         if (optionLongTable):
             latex = r"\end{longtblr}" + "\n\n"
@@ -1425,3 +1442,221 @@ def sortKeyFuncNotesForFingerprintReport(note):
     #
     return calcFpDoneId(typeStr, fpLead, fpFinger)
 # ---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+# ---------------------------------------------------------------------------
+def generateAddReportsRequested(renderDoc, env, targetSection):
+    typeFilter = ["coverageYellowCategory", "coverageName", "coverageLeads"]
+    filteredReqs = env.getInterp().getFilteredReportRequests(typeFilter)
+    reqs = filteredReqs["reqs"]
+    reqCount = filteredReqs["count"]
+    if (reqCount == 0):
+        return
+
+    # create "lead" to hold this report
+    from .cbrender import CbRenderLead
+
+    id = "Requested Reports"
+    label = None
+    reportLead = CbRenderLead(renderDoc, targetSection.getLevel()+1, targetSection, None, id, label, None, None, False)
+    #
+    # build text contents
+    results = JrAstResultList()
+    results.flatAdd("This section includes reports requested via $report*() calls (for coverage checks, etc.).\n\n")
+
+    # run requested reports
+    for req in reqs:
+        #text = "* {}.\n".format(req.getDict())
+        #results.flatAdd(text)
+
+        # ATTN: get list of neighborhoods to search, using:
+        reqDict = req.getDict()
+        reqType = reqDict["type"]
+        if (reqType=="coverageYellowCategory"):
+            generateAddReportsRequested_coverageYellowCategory(reqDict, renderDoc, env, results)
+        elif (reqType=="coverageName"):
+            generateAddReportsRequested_coverageName(reqDict, renderDoc, env, results)
+        elif (reqType=="coverageLeads"):
+            generateAddReportsRequested_coverageLeads(reqDict, renderDoc, env, results)
+        else:
+            raise Exception("Unknown request report: {}.".format(reqDict))
+
+    # set text
+    results.flatAdd("\n\n")
+    reportLead.setBlockList(results)
+
+    # add lead to section
+    targetSection.processAndFileLead(renderDoc.getInterp(), env, reportLead, targetSection, renderDoc)
+
+
+
+def generateAddReportsRequested_coverageYellowCategory(reqDict, renderDoc, env, results):
+    jregionList = calcJregionListListForReportReq(reqDict, renderDoc, env)
+    searchOptions = {"ptype": "yellow", "jregionList": jregionList, "andOr": "or"}
+    searchFilter = {}
+    #
+    if (reqDict["pcat"] is not None):
+        searchFilter["pcat"] = reqDict["pcat"]
+    if (reqDict["pcatg"] is not None):
+        searchFilter["pcatg"] = reqDict["pcatg"]
+    if (reqDict["likeLead"] is not None):
+        likeLead = reqDict["likeLead"]
+        # get this lead row, use ITS pcat and pcatg
+        # get hlapi helper
+        hlApi = renderDoc.getHlApi()
+        [leadRow, sourceKey] = hlApi.findLeadRowByLeadId(likeLead)
+        if (leadRow is None):
+            raise Exception("Could not find likeLead={}.".format(likeLead))
+        # take pcat and pcatg from leadRow
+        leadRowProperties = leadRow["properties"]
+        searchFilter["pcat"] = leadRowProperties["pcat"]
+        searchFilter["pcatg"] = leadRowProperties["pcatg"]
+    #
+    coverage = findLeadRowCoverage(renderDoc, searchOptions, searchFilter)
+    #
+    label = '"{}"'.format(reqDict["label"]) if (not reqDict["label"] is None) else ""
+    text = "Coverage report {} for {} (yellow pages):".format(label, reqDict) + "\n"
+    results.flatAdd(text)
+    # add result list (not found)
+    generateAddReportsRequested_AddCoverageNotFoundListToResults(coverage, results)
+
+
+
+def generateAddReportsRequested_coverageName(reqDict, renderDoc, env, results):
+    jregionList = calcJregionListListForReportReq(reqDict, renderDoc, env)
+    searchOptions = {"ptype": "person", "jregionList": jregionList, "andOr": "or"}
+    searchFilter = {}
+    #
+    if (reqDict["first"] is not None):
+        searchFilter["firstName"] = reqDict["first"]
+    if (reqDict["last"] is not None):
+        searchFilter["lastName"] = reqDict["last"]
+    #
+    coverage = findLeadRowCoverage(renderDoc, searchOptions, searchFilter)
+    #
+    label = '"{}"'.format(reqDict["label"]) if (not reqDict["label"] is None) else ""
+    text = "Coverage report {} for {} (person names):".format(label, reqDict) + "\n"
+    results.flatAdd(text)
+    # add result list (not found)
+    generateAddReportsRequested_AddCoverageNotFoundListToResults(coverage, results)
+
+
+
+def generateAddReportsRequested_coverageLeads(reqDict, renderDoc, env, results):
+    #
+    searchOptions = {"ptype": "leads"}
+    searchFilter = {"leads": reqDict["leads"]}
+    coverage = findLeadRowCoverage(renderDoc, searchOptions, searchFilter)
+    #
+    label = '"{}"'.format(reqDict["label"]) if (not reqDict["label"] is None) else ""
+    text = "Coverage report {} for {} (leads):".format(label, reqDict) + "\n"
+    results.flatAdd(text)
+    # add result list (not found)
+    generateAddReportsRequested_AddCoverageNotFoundListToResults(coverage, results)
+
+
+
+
+
+def generateAddReportsRequested_AddCoverageNotFoundListToResults(coverage, results):
+    text = " * {} of {} relevant leads are missing entries.\n".format(coverage["notFoundRowCount"], coverage["allRowCount"])
+    results.flatAdd(text)
+    #
+    allRows = coverage["allRows"]
+    for i in coverage["notFoundRowIndices"]:
+        row = allRows[i]
+        ptype = row["ptype"]
+        leadId = row["lead"]
+        dName = row["dName"]
+        address = row["address"]
+        jregion = row["jregion"]
+        loclabel = row["loclabel"] if ("loclabel" in row) else None
+        if (loclabel is None):
+            loclabel = "?"
+        if (row["apt"] is not None) and (row["apt"]!="") and (row["apt"]!="nan"):
+            address += " Apt." + row["apt"]
+
+        if (int(row["offmap"])>0):
+            addressFull = "{} @ offmap".format(address)
+        else:
+            addressFull = "{} @ {}{}".format(address, jregion, loclabel)
+
+        extra = ""
+        if (ptype=="yellow"):
+            extra = " [{}]".format(row["pcatg"])
+        text = " * **{}**: {} ({})".format(leadId, dName, addressFull)
+        if (extra!=""):
+            text += " " + extra
+        text += ".\n"
+        results.flatAdd(text)
+
+
+
+def calcJregionListListForReportReq(reqDict, renderDoc, env):
+    range = reqDict["range"]
+    neighborhood = reqDict["neighborhood"]
+    nearLead = reqDict["nearLead"]
+    #
+    # get hlapi helper
+    hlApi = renderDoc.getHlApi()
+    #
+    if (nearLead is not None):
+        # calculate neighborhood from neerLear
+        [leadRow, sourceKey] = hlApi.findLeadRowByLeadId(nearLead)
+        if (leadRow is None):
+            raise Exception("Could not find nearLead={}.".format(nearLead))
+        neighborhood = leadRow["properties"]["jregion"]
+    # now create neighborhoodList based on range (in, near, global)
+    if (range=="global"):
+        jregionList = hlApi.calcJregionListGlobal()
+    else:
+        jregionList = neighborhood.split("|")
+        if (range=="near"):
+            jregionList = hlApi.calcJregionListNear(jregionList)
+        hlApi.validateJregionList(jregionList)
+    return jregionList
+
+
+
+def findLeadRowCoverage(renderDoc, searchOptions, searchFilter):
+    coverage = {}
+    # build list of relevant rows
+    foundRowIndices = []
+    notFoundRowIndices = []
+
+        # get hlapi helper
+    hlApi = renderDoc.getHlApi()
+    if (searchOptions["ptype"]=="leads"):
+        leadIdList = searchFilter["leads"].split(",")
+        leadIdList = [x.strip() for x in leadIdList]
+        searchResults = hlApi.findLeadRowsByLeadIds(leadIdList)
+    else:
+        searchResults = hlApi.searchRows(searchOptions, searchFilter)
+
+    # find which have entries
+    for index,row in enumerate(searchResults):
+        leadId = row["lead"]
+        # now see if there is a lead for this in the case
+        leadref = renderDoc.findLeadByIdPath(leadId, None)
+        if (leadref is not None):
+            foundRowIndices.append(index)
+        else:
+            notFoundRowIndices.append(index)
+
+    # return dict
+    coverage["allRowCount"] = len(searchResults)
+    coverage["foundRowCount"] = len(foundRowIndices)
+    coverage["notFoundRowCount"] = len(notFoundRowIndices)
+    coverage["allRows"] = searchResults
+    coverage["foundRowIndices"] = foundRowIndices
+    coverage["notFoundRowIndices"] = notFoundRowIndices
+    return coverage
+# ---------------------------------------------------------------------------
+

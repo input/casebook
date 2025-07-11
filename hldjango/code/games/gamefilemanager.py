@@ -6,6 +6,7 @@ import datetime
 
 # django modules
 from django.conf import settings
+#from django.contrib.sites.models import Site
 
 # helpers
 from lib.jr import jrfuncs, jrdfuncs
@@ -71,9 +72,21 @@ def calculateAbsoluteMediaPathForRelativePath(relativePath):
     path = jrfuncs.canonicalFilePath(path)
     return path
 
+def calculateAbsolutePathForRelativePath(relativePath):
+    path = "/".join([relativePath])
+    path = jrfuncs.canonicalFilePath(path)
+    return path
+
 def calcGamePathIdPart(game):
     return jrdfuncs.resolveSubDirName(game.subdirname, game.pk)
 
+
+def generateAbsoluteUrlForRelativePath(relativePath):
+    #current_site = Site.objects.get_current()
+    #domain = current_site.domain
+    domain = settings.JR_SITE_DOMAIN
+    absolute_url = f"https://www.{domain}{relativePath}"
+    return absolute_url
 
 
 
