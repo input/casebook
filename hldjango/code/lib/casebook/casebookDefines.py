@@ -8,14 +8,18 @@
 
 
 # defines
-DefCbVersion = "4.83"
-DefCbVersionDate = "8/20/25"
+DefCbVersion = "4.85"
+DefCbVersionDate = "9/20/25"
 DefCbVersionString = "v" + DefCbVersion + " (" + DefCbVersionDate + ")"
 DefCbBuildString = "Casebook " + DefCbVersionString
 DefCbAuthorString = "Jesse Reichler <jessereichler@gmail.com>"
 
 # version changes
 DefCbVersionHistory = """
+# v4.85 (9/20/25)
+Fixing "Add User" from admin page
+# v4.84 (9/16/25)
+Changed homepage image to compressed smaller jpg
 # v4.83 (8/20/25)
 Added date/size info to game file list, and option to sort on them
 # v4.82 (8/16/25)
